@@ -1,0 +1,14 @@
+{
+  "name": "Marvis Arcade · 轻量级网页游戏合集",
+  "short_name": "Marvis Arcade",
+  "description": "12 款即点即玩的轻量级网页游戏：贪吃蛇、俄罗斯方块、打砖块、2048、节奏打击、四向斩击、重力翻转、炮兵对决、塔防、多边形堆叠、Hextris、极简太空。纯 HTML/CSS/JS 单文件，零后端零依赖。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#12100c",
+  "theme_color": "#1a1712",
+  "lang": "zh-CN",
+  "icons": [
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
