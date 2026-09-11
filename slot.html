@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Marvis Slots · 水果机老虎机 - Marvis Arcade</title>
+<meta name="description" content="经典 3×3 水果机老虎机：樱桃、七、柠檬、橙、梅子、BAR 六种符号随机滚动，三连即赔。押注、自动转、最高余额存档，纯单文件 HTML5 轻量游戏。">
+<link rel="canonical" href="https://marvis-arcade.pages.dev/slot.html">
+<meta property="og:title" content="Marvis Slots · 水果机老虎机 - Marvis Arcade">
+<meta property="og:description" content="经典 3×3 水果机老虎机：押注三连即赔，纯单文件 HTML5 轻量游戏。">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#1a1712">
+<style>
+  :root{--bg:#14110d;--panel:#1f1b15;--line:#3a322a;--gold:#f5c356;--goldd:#a88635;--silver:#c8c4bc;--red:#e0473c;--dim:#8a8177}
+  *{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
+  body{background:radial-gradient(1200px 700px at 50% -10%,#2a241c,#14110d 70%);color:var(--silver);font-family:"Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:18px}
+  a.back{position:fixed;top:14px;left:16px;font-size:.78rem;color:var(--dim);text-decoration:none;letter-spacing:.06em}
+  a.back:hover{color:var(--gold)}
+  h1{font-size:1rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);text-shadow:0 0 18px #f5c35644}
+  h1 small{letter-spacing:.14em;color:var(--dim);font-size:.62rem;display:block;text-align:center;margin-top:3px}
+  .machine{background:linear-gradient(180deg,#2c2b26,#221d17);border:1px solid var(--line);border-radius:22px;padding:18px 16px 16px;box-shadow:0 30px 70px -30px #000c,inset 0 1px 0 #ffffff12;max-width:min(92vw,430px);width:100%}
+  .marlight{display:flex;justify-content:center;gap:14px;margin-bottom:14px}
+  .marlight i{width:10px;height:10px;border-radius:50%;background:#3a3122;box-shadow:inset 0 -2px 3px #0008}
+  .marlight i.on{background:var(--red);box-shadow:0 0 10px var(--red),inset 0 -2px 3px #0008;animation:blink .9s infinite}
+  .marlight i.on:nth-child(2n){animation-delay:.3s}
+  .marlight i.on:nth-child(3n){animation-delay:.6s}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+  #reels{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:linear-gradient(180deg,#0f0d0a,#181410);border:2px solid var(--line);border-radius:14px;padding:10px;box-shadow:inset 0 6px 18px #0009,inset 0 -3px 6px #0005}
+  #reels::after{content:"";position:absolute;inset:0;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,0) 55%);pointer-events:none;z-index:5}
+  .reel{display:flex;flex-direction:column;overflow:hidden;border-radius:8px;background:#191410;border:1px solid #0006}
+  .cell{height:86px;display:grid;place-items:center}
+  .cell svg{width:60px;height:60px;display:block}
+  .cell.hit{outline:2px solid var(--gold);outline-offset:-2px;background:radial-gradient(circle,#f5c35626,transparent 70%);border-radius:8px}
+  .cell.spin{animation:cellsh .18s ease-in-out}
+  @keyframes cellsh{0%{transform:scale(1,.35)}70%{transform:scale(1,1.22)}100%{transform:scale(1,1)}}
+  .paylines{display:grid;grid-template-columns:1fr;gap:4px;margin-top:8px}
+  .payline{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border-radius:8px;padding:3px 6px}
+  .payline b{font-size:.6rem;color:var(--dim);text-align:center;line-height:24px;letter-spacing:.12em}
+  .payline.hit{background:radial-gradient(circle,#f5c35622,transparent 75%);box-shadow:inset 0 0 0 1px #f5c35655}
+  .payline.hit b{color:var(--gold)}
+  .hud{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}
+  .m{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center}
+  .m b{display:block;font-size:.58rem;letter-spacing:.12em;color:var(--dim);margin-bottom:3px}
+  .m em{font-style:normal;font-size:1.15rem;font-weight:800;font-variant-numeric:tabular-nums}
+  .m em.win{color:var(--gold);text-shadow:0 0 12px #f5c35666}
+  .bar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .bet{grid-column:1/3;display:flex;justify-content:center;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+  .bet b{font-size:.66rem;color:var(--dim);letter-spacing:.1em}
+  .bet .amt{font-size:1rem;font-weight:800;color:var(--gold);min-width:46px;text-align:center;font-variant-numeric:tabular-nums}
+  .bet button{background:none;border:1px solid var(--line);color:var(--silver);width:30px;height:30px;border-radius:8px;font-size:1rem;cursor:pointer;line-height:1}
+  .bet button:hover{color:var(--gold);border-color:var(--goldd)}
+  .btn{border:0;border-radius:12px;padding:14px 0;font-size:1rem;font-weight:800;letter-spacing:.14em;cursor:pointer;transition:filter .15s,transform .05s;color:#1a1305}
+  .btn:active{transform:translateY(1px)}
+  .btn.spin{background:linear-gradient(180deg,#ffd86e,#e8a92c);box-shadow:0 6px 18px #e8a92c44,inset 0 1px 0 #fff6}
+  .btn.spin:disabled{filter:grayscale(.7) brightness(.7);cursor:not-allowed}
+  .btn.auto{background:linear-gradient(180deg,#4a443a,#333025);color:var(--silver);border:1px solid var(--line)}
+  .btn.auto.on{background:linear-gradient(180deg,#6a5a2e,#4a3e1e);color:var(--gold)}
+  .msg{min-height:20px;text-align:center;font-size:.8rem;color:var(--dim);letter-spacing:.08em;margin-top:10px}
+  .msg.win{color:var(--gold);font-weight:700}
+  .hint{color:var(--dim);font-size:.72rem;line-height:1.8;text-align:center}
+  kbd{background:#26221c;border:1px solid var(--line);padding:2px 7px;border-radius:5px;font-size:.68rem}
+  table{width:100%;border-collapse:collapse;color:var(--dim);max-width:430px}
+  td,th{font-size:.7rem;text-align:center;padding:3px 4px}
+  th{color:var(--silver);font-weight:600}
+</style>
+<meta property="og:url" content="https://marvis-arcade.pages.dev/slot.html">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://marvis-arcade.pages.dev/slot-og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Marvis Slots 水果机封面">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Marvis Slots · 水果机老虎机">
+<meta name="twitter:description" content="经典 3×3 水果机老虎机：押注三连即赔，纯单文件 HTML5 轻量游戏。">
+<meta name="twitter:image" content="https://marvis-arcade.pages.dev/slot-og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  "name": "水果机老虎机 Marvis Slots",
+  "url": "https://marvis-arcade.pages.dev/slot.html",
+  "description": "经典 3×3 水果机老虎机：樱桃、七、柠檬、橙、梅子、BAR 六种符号随机滚动，三连即赔。押注、自动转、最高余额存档，纯单文件 HTML5 轻量游戏。",
+  "inLanguage": "zh-CN",
+  "isPartOf": {
+    "@type": "WebSite",
+    "name": "Marvis Arcade",
+    "url": "https://marvis-arcade.pages.dev/"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Marvis"
+  },
+  "genre": ["Casino", "Classic", "Luck"],
+  "playMode": "SinglePlayer",
+  "applicationCategory": "Game",
+  "operatingSystem": "Any",
+  "browserRequirements": "Requires JavaScript",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "CNY"
+  },
+  "featureList": "单文件实现 · 键盘与触屏双适配 · localStorage 最高余额存档 · 六符号 3×3 卷轴",
+  "image": "https://marvis-arcade.pages.dev/slot-og.png",
+  "datePublished": "2026-09-12",
+  "author": {
+    "@type": "Person",
+    "name": "Marvis"
+  }
+}
+</script>
+</head>
+<body>
+<a class="back" href="index.html">← Marvis Arcade</a>
+<h1>Marvis Slots<small>CLASSIC FRUIT MACHINE</small></h1>
+<div class="machine">
+  <div class="marlight" id="lights"></div>
+  <div id="reels"></div>
+  <div class="paylines" id="paylines"></div>
+  <div class="hud">
+    <div class="m"><b>CREDIT</b><em id="credit">100</em></div>
+    <div class="m"><b>BET</b><em id="bet">5</em></div>
+    <div class="m"><b>WIN</b><em id="win">0</em></div>
+  </div>
+  <div class="bar">
+    <div class="bet"><b>押注</b><button onclick="game.betD()">−</button><span class="amt" id="betamt">×5</span><button onclick="game.betU()">+</button></div>
+    <button class="btn spin" id="spinBtn" onclick="game.spin()">SPIN</button>
+    <button class="btn auto" id="autoBtn" onclick="game.toggleAuto()">AUTO 关</button>
+  </div>
+  <div class="msg" id="msg"></div>
+</div>
+<table>
+  <tr><th>符号</th><th>樱桃</th><th>柠檬</th><th>橙子</th><th>梅子</th><th>BAR</th><th>7</th></tr>
+  <tr><th>赔率 ×注</th><td>8</td><td>12</td><td>15</td><td>20</td><td>50</td><td>100</td></tr>
+</table>
+<div class="hint"><kbd>空格</kbd> 转动 · <kbd>↑↓</kbd> 调注 · <kbd>A</kbd> 自动 · 中奖行自动高亮</div>
+<script>
+(function(){
+"use strict";
+var ORDER=['cherry','lemon','orange','plum','bar','seven'];
+var P={cherry:8,lemon:12,orange:15,plum:20,bar:50,seven:100};
+function sym(name){
+  var s='<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">';
+  if(name==='cherry'){
+    s+='<path d="M32 22c-2-10 2-18 10-20-1 10-5 17-10 20z" fill="#3e8a4a"/>';
+    s+='<circle cx="24" cy="44" r="11" fill="#e0473c" stroke="#8e2420" stroke-width="2"/>';
+    s+='<circle cx="40" cy="47" r="11" fill="#f04a40" stroke="#8e2420" stroke-width="2"/>';
+    s+='<circle cx="26" cy="41" r="3.2" fill="#ffd0cc"/>';
+  }else if(name==='lemon'){
+    s+='<path d="M32 12c-12 0-20 10-18 22l2 16 16-4 16 2c8-6 6-22-4-30-2-3-6-6-12-6z" fill="#f5c356" stroke="#b5892a" stroke-width="2"/>';
+    s+='<circle cx="24" cy="26" r="3" fill="#ffe9a8"/>';
+  }else if(name==='orange'){
+    s+='<circle cx="32" cy="30" r="17" fill="#f08c28" stroke="#b05f14" stroke-width="2"/>';
+    s+='<path d="M27 14c2-5 7-7 12-6-3 4-8 7-12 6z" fill="#3e8a4a"/>';
+    s+='<circle cx="25" cy="25" r="3" fill="#ffc880"/>';
+    s+='<circle cx="40" cy="23" r="2" fill="#ffc880"/>';
+  }else if(name==='plum'){
+    s+='<path d="M32 18c-10 0-16 10-14 22l3 10c7-2 17-4 20-6 4-8 0-26-9-26z" fill="#a86cee" stroke="#6f43a8" stroke-width="2"/>';
+    s+='<path d="M31 18c-1-6 3-10 9-10-2 5-5 8-9 10z" fill="#3e8a4a"/>';
+    s+='<circle cx="25" cy="31" r="3" fill="#e2c6ff" opacity=".7"/>';
+  }else if(name==='bar'){
+    s+='<rect x="10" y="14" width="44" height="36" rx="6" fill="#e8e6e2" stroke="#8a8782" stroke-width="2"/>';
+    s+='<rect x="14" y="18" width="36" height="28" rx="4" fill="#26221c"/>';
+    s+='<text x="32" y="38" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" font-weight="900" fill="#f5c356">BAR</text>';
+  }else if(name==='seven'){
+    s+='<rect x="12" y="12" width="40" height="40" rx="9" fill="#e0473c" stroke="#8e2420" stroke-width="2"/>';
+    s+='<text x="32" y="42" text-anchor="middle" font-family="Arial,sans-serif" font-size="31" font-weight="900" fill="#ffd86e" stroke="#a88635" stroke-width="1">7</text>';
+  }
+  return s+'</svg>';
+}
+var gameApi={};
+var reelsEl=document.getElementById('reels'),plEl=document.getElementById('paylines'),
+    creditEl=document.getElementById('credit'),betEl=document.getElementById('bet'),
+    winEl=document.getElementById('win'),betAmtEl=document.getElementById('betamt'),
+    spinBtn=document.getElementById('spinBtn'),autoBtn=document.getElementById('autoBtn'),
+    msgEl=document.getElementById('msg'),lightsEl=document.getElementById('lights'),
+    lightEls=[];
+for(var i=0;i<9;i++){var li=document.createElement('i');lightsEl.appendChild(li);lightEls.push(li);}
+var grids=new Array(9);
+var credit=+localStorage.getItem('slots.maxcr')||100;
+var bet=5,BETS=[1,5,10,25];
+var spinning=false,auto=false;
+var AC=window.AudioContext||window.webkitAudioContext;
+var AUD=AC?new AC():null, muted=false;
+function tone(f,d,when,type,vol){
+  if(!AUD)return;
+  var t=AUD.currentTime+(when||0),o=AUD.createOscillator(),g=AUD.createGain();
+  o.type=type||'square';o.frequency.value=f;
+  g.gain.setValueAtTime(vol||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g);g.connect(AUD.destination);o.start(t);o.stop(t+d+.02);
+}
+function sfx(k){
+  if(!AUD)return;
+  if(k==='spin'){tone(220,.12,0,'sawtooth',.035);tone(330,.12,.06,'sawtooth',.035);}
+  else if(k==='stop'){tone(540,.06,0,'square',.045);}
+  else if(k==='win'){[880,1108,1318].forEach(function(f,i){tone(f,.15,i*.09,'triangle',.06);});}
+  else if(k==='big'){[880,1108,1318,1760].forEach(function(f,i){tone(f,.2,i*.11,'triangle',.07);});}
+  else if(k==='lose'){tone(170,.18,0,'sawtooth',.04);tone(120,.22,.12,'sawtooth',.04);}
+  else if(k==='buy'){tone(660,.07,0,'triangle',.05);}
+}
+function setMsg(t){msgEl.textContent=t;msgEl.className=t.indexOf('赢')>=0||t.indexOf('恭喜')>=0?'msg win':'msg';}
+function bright(on){lightEls.forEach(function(e){e.classList.toggle('on',on);});}
+function sync(){creditEl.textContent=credit;betEl.textContent=bet;betAmtEl.textContent='×'+bet;}
+function rnd(){return (Math.random()*ORDER.length)|0;}
+function cellIdx(r,c){return document.getElementById('c'+r+''+c);}
+function renderCell(r,c,v){grids[r*3+c]=v;var el=cellIdx(r,c);el.innerHTML=ORDER[v];}
+function build(){
+  reelsEl.innerHTML='';
+  for(var c=0;c<3;c++){
+    var reel=document.createElement('div');reel.className='reel';
+    for(var r=0;r<3;r++){
+      var cell=document.createElement('div');cell.className='cell';cell.id='c'+r+''+c;
+      reel.appendChild(cell);
+    }
+    reelsEl.appendChild(reel);
+  }
+  for(var i=0;i<9;i++)renderCell((i/3)|0,i%3,rnd());
+  plEl.innerHTML='<div class="payline" id="pl0"><b>上排 ×1</b></div><div class="payline" id="pl1"><b>中排 ×2</b></div><div class="payline" id="pl2"><b>下排 ×1</b></div>';
+}
+function quickSpin(col,result,finish){
+  var loops=14;
+  for(var i=0;i<3;i++)cellIdx(i,col).classList.add('spin');
+  var timer=setInterval(function(){
+    loops--;
+    for(var i=0;i<3;i++){
+      renderCell(i,col,rnd());
+      var el=cellIdx(i,col);el.classList.remove('spin');void el.offsetWidth;el.classList.add('spin');
+    }
+    if(loops<=0){
+      clearInterval(timer);
+      for(var i=0;i<3;i++){renderCell(i,col,result[i]);cellIdx(i,col).classList.remove('spin');}
+      sfx('stop');
+      finish&&finish();
+    }
+  },56);
+}
+gameApi.betU=function(){if(spinning)return;var i=BETS.indexOf(bet);i=(i+1)%BETS.length;bet=BETS[i];sync();sfx('buy');};
+gameApi.betD=function(){if(spinning)return;var i=BETS.indexOf(bet);i=(i-1+BETS.length)%BETS.length;bet=BETS[i];sync();sfx('buy');};
+gameApi.toggleAuto=function(){if(spinning)return;auto=!auto;autoBtn.textContent=auto?'AUTO 开':'AUTO 关';autoBtn.classList.toggle('on',auto);if(auto)autoSpin();};
+function autoSpin(){if(!auto||spinning||credit<bet)return;gameApi.spin();}
+gameApi.spin=function(){
+  if(spinning)return;
+  if(credit<bet){credit=100;localStorage.setItem('slots.maxcr',100);sync();setMsg('余额不足，已重置 100 信用点');return;}
+  credit-=bet;sync();
+  winEl.textContent='0';winEl.classList.remove('win');
+  document.querySelectorAll('.payline,.cell').forEach(function(e){e.classList.remove('hit');});
+  setMsg('转动中… 好运');bright(true);sfx('spin');
+  spinning=true;spinBtn.disabled=true;
+  var r1=[rnd(),rnd(),rnd()],r2=[rnd(),rnd(),rnd()],r3=[rnd(),rnd(),rnd()];
+  quickSpin(0,r1);
+  setTimeout(function(){quickSpin(1,r2);},430);
+  setTimeout(function(){quickSpin(2,r3,function(){settle([r1,r2,r3]);});},860);
+};
+function settle(rows){
+  var lineWins=[0,0,0],total=0;
+  for(var r=0;r<3;r++){
+    var a=rows[r];
+    if(a[0]===a[1]&&a[1]===a[2]){
+      var w=P[ORDER[a[0]]]*bet*(r===1?2:1);
+      lineWins[r]=w;total+=w;
+    }
+  }
+  if(total>0){
+    winEl.textContent='+'+total;winEl.classList.add('win');
+    for(var r=0;r<3;r++)if(lineWins[r]){
+      document.getElementById('pl'+r).classList.add('hit');
+      for(var c=0;c<3;c++)cellIdx(r,c).classList.add('hit');
+    }
+    credit+=total;
+    var best=+localStorage.getItem('slots.maxcr')||0;
+    if(credit>best)localStorage.setItem('slots.maxcr',credit);
+    var jackpot=rows.some(function(x){return x[0]===5&&x[1]===5&&x[2]===5;});
+    setMsg('恭喜 赢 '+total+'！'+(jackpot?' 三 7 大满贯！':''));
+    sfx(jackpot?'big':'win');
+    if(jackpot){bright(true);setTimeout(function(){bright(false);},2600);}
+  }else{
+    setMsg('未中，再来一次');
+    sfx('lose');
+  }
+  sync();
+  bright(false);
+  spinning=false;spinBtn.disabled=false;
+  setTimeout(autoSpin,650);
+}
+build();sync();setMsg('按下 SPIN 或空格开始');
+window.game=gameApi;
+document.addEventListener('keydown',function(e){
+  if(e.code==='Space'){e.preventDefault();gameApi.spin();}
+  else if(e.code==='ArrowUp'){e.preventDefault();gameApi.betU();}
+  else if(e.code==='ArrowDown'){e.preventDefault();gameApi.betD();}
+  else if(e.key.toLowerCase()==='a'){gameApi.toggleAuto();}
+});
+})();
+</script>
+</body>
+</html>
