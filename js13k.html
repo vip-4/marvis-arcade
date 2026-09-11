@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Star Orbit · 极简版 js13k - Marvis Arcade</title>
+<meta name="description" content="js13k 精神的极简单文件太空小游戏：撞向星尘阵收集能量、躲避彗星，60 秒倒计时。全程 canvas 绘制，无任何外部资源。">
+<link rel="canonical" href="https://marvis-arcade.pages.dev/js13k.html">
+<meta property="og:title" content="Star Orbit · js13k 极简单文件游戏 - Marvis Arcade">
+<meta property="og:description" content="js13k 精神的极简太空收集小游戏。">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#101218">
+<style>
+  :root{--bg:oklch(15% .02 270);--fg:oklch(90% .02 270);--ac:oklch(76% .14 265);--dim:oklch(62% .04 270)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:"Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+  a.back{position:fixed;top:14px;left:16px;font-size:.78rem;color:var(--dim);text-decoration:none;letter-spacing:.05em}
+  a.back:hover{color:var(--ac)}
+  h1{font-size:1.05rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+  #hud{display:flex;gap:22px;font-variant-numeric:tabular-nums;font-size:.9rem}
+  #hud b{color:var(--ac)}
+  canvas{background:oklch(17% .03 270);border-radius:12px;box-shadow:0 20px 50px -20px oklch(6% .05 270);touch-action:none;cursor:crosshair;max-width:96vw}
+  .hint{color:var(--dim);font-size:.76rem;text-align:center;line-height:1.7}
+  kbd{background:oklch(27% .03 270);padding:2px 7px;border-radius:5px;font-size:.72rem}
+  #msg{position:fixed;inset:0;display:none;place-items:center;background:oklch(9% .02 270 / .74);color:var(--fg);font-size:1.3rem;text-align:center;flex-direction:column;gap:16px;z-index:20}
+  #msg.show{display:flex}
+  #msg button{padding:12px 30px;border:0;border-radius:10px;background:var(--ac);color:oklch(15% .05 270);font-weight:700;cursor:pointer;font-size:1rem}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← Marvis Arcade</a>
+<h1>Star Orbit · js13k 极简小游戏</h1>
+<div id="hud"><span>能量 <b id="energy">0</b></span><span>连击 <b id="combo">0</b></span><span>时间 <b id="time">60</b></span><span>最高 <b id="best">0</b></span></div>
+<canvas id="cv" width="480" height="360"></canvas>
+<div class="hint">移动光标 / <kbd>WASD</kbd> 驾驶小飞船：收集金色星尘赚能量，避开红色彗星 · 触屏拖动飞行</div>
+<div id="msg">GAME OVER —— 你的能量旅行结束了<div id="final"></div><button onclick="restart()">再来一局</button></div>
+<script>
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+  var energyEl=document.getElementById('energy'),comboEl=document.getElementById('combo'),
+      timeEl=document.getElementById('time'),bestEl=document.getElementById('best'),
+      msgEl=document.getElementById('msg'),finalEl=document.getElementById('final');
+  var best=+localStorage.getItem('js13k.best')||0;bestEl.textContent=best;
+  var W=480,H=360;
+  var px=W/2,py=H/2,tx=W/2,ty=H/2,energy=0,combo=0,time=60,playing=false,raf=null;
+  var stars=[],comets=[],fx=[],t0=0,lastCombo=0;
+  function spawnStars(){
+    for(var i=stars.length;i<22;i++){
+      stars.push({x:Math.random()*W,y:Math.random()*H,r:2.5+Math.random()*2.5,v:0.3+Math.random()*0.5,ph:Math.random()*6.28});
+    }
+  }
+  function spawnComet(){
+    var edge=(Math.random()*2)|0;
+    var x,y,dx,dy;
+    if(edge===0){x=Math.random()*W;y=-10;dx=(Math.random()*2-1);dy=1;}
+    else{x=Math.random()*W;y=H+10;dx=(Math.random()*2-1);dy=-1;}
+    var sp=1.5+Math.random()*1.5;
+    comets.push({x:x,y:y,dx:dx*sp,dy:dy*sp,r:5+Math.random()*4});
+  }
+  function step(){
+    if(!playing)return;
+    var now=performance.now();
+    // ship follows target with easing
+    px+=(tx-px)*0.12;py+=(ty-py)*0.12;
+    px=Math.max(10,Math.min(W-10,px));py=Math.max(10,Math.min(H-10,py));
+    // determine combo from speed
+    var spd=Math.hypot(px-(tx),py-(ty));
+    // stars
+    stars.forEach(function(s){
+      s.ph+=0.08;
+      if(Math.hypot(s.x-px,s.y-py)<16+s.r){
+        s.x=Math.random()*W;s.y=Math.random()*H;
+        combo++;lastCombo=performance.now();
+        energy+=5+Math.min(combo,15);
+        energyEl.textContent=energy;
+        if(energy>best){best=energy;localStorage.setItem('js13k.best',best);}
+        bestEl.textContent=best;
+        fx.push({x:px,y:py,life:14});
+      }
+    });
+    if(performance.now()-lastCombo>2600&&combo>0){combo=0;comboEl.textContent=0;}
+    comboEl.textContent=combo;
+    // comets
+    comets.forEach(function(c){c.x+=c.dx;c.y+=c.dy;});
+    comets=comets.filter(function(c){return c.x>-30&&c.x<W+30&&c.y>-30&&c.y<H+30;});
+    // hit check
+    for(var i=0;i<comets.length;i++){
+      if(Math.hypot(comets[i].x-px,comets[i].y-py)<comets[i].r+10){
+        comets.splice(i,1);
+        combo=0;comboEl.textContent=0;
+        energy=Math.max(0,energy-30);
+        energyEl.textContent=energy;
+        explode(px,py);
+        break;
+      }
+    }
+    fx.forEach(function(f){f.life--;});
+    fx=fx.filter(function(f){return f.life>0;});
+    // timer
+    var left=Math.max(0,60-Math.floor((now-t0)/1000));
+    if(left!==time){time=left;timeEl.textContent=time;if(time<=0)end();}
+    if(Math.random()<0.02)spawnComet();
+  }
+  function explode(x,y){for(var i=0;i<10;i++){fx.push({x:x,y:y,life:18,vx:(Math.random()-.5)*3,vy:(Math.random()-.5)*3});}}
+  function draw(){
+    ctx.fillStyle='oklch(17% .03 270)';ctx.fillRect(0,0,W,H);
+    // faint grid nostalgia
+    ctx.strokeStyle='oklch(24% .02 270)';
+    for(var gx=0;gx<W;gx+=20){ctx.beginPath();ctx.moveTo(gx+.5,0);ctx.lineTo(gx+.5,H);ctx.stroke();}
+    for(var gy=0;gy<H;gy+=20){ctx.beginPath();ctx.moveTo(0,gy+.5);ctx.lineTo(W,gy+.5);ctx.stroke();}
+    // stars
+    stars.forEach(function(s){
+      var b=0.5+0.5*Math.sin(s.ph);
+      ctx.fillStyle='rgba(255,216,130,'+(0.5+b*0.5)+')';
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,7);ctx.fill();
+      ctx.fillStyle='rgba(255,244,210,.8)';
+      ctx.beginPath();ctx.arc(s.x-s.r*0.3,s.y-s.r*0.3,s.r*0.4,0,7);ctx.fill();
+    });
+    // comets
+    comets.forEach(function(c){
+      ctx.fillStyle='oklch(72% .2 25)';
+      ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,7);ctx.fill();
+      ctx.strokeStyle='rgba(255,120,90,.35)';ctx.lineWidth=3;
+      var d=Math.hypot(c.dx,c.dy)||1;
+      ctx.beginPath();ctx.moveTo(c.x,c.y);ctx.lineTo(c.x-c.dx/d*22,c.y-c.dy/d*22);ctx.stroke();
+    });
+    // fx
+    fx.forEach(function(f){
+      if(f.vx){ctx.fillStyle='rgba(255,160,110,'+(f.life/18)+')';ctx.beginPath();ctx.arc(f.x+f.vx,f.y+f.vy,3,0,7);ctx.fill();}
+      else{ctx.fillStyle='rgba(255,240,190,'+(f.life/14)+')';ctx.beginPath();ctx.arc(f.x,f.y,6,0,7);ctx.fill();}
+    });
+    // ship
+    ctx.save();ctx.translate(px,py);ctx.rotate(Math.atan2(ty-py,tx-px));
+    ctx.fillStyle='var(--ac)';
+    ctx.beginPath();ctx.moveTo(12,0);ctx.lineTo(-8,7);ctx.lineTo(-4,0);ctx.lineTo(-8,-7);ctx.closePath();ctx.fill();
+    ctx.restore();
+    // ring around ship
+    ctx.strokeStyle='rgba(140,190,255,.25)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(px,py,20,0,7);ctx.stroke();
+    // timer
+    ctx.fillStyle='var(--ac)';ctx.font='15px system-ui';ctx.textAlign='right';
+    ctx.fillText('⏱ '+time+'s',W-10,22);
+  }
+  function end(){
+    playing=false;cancelAnimationFrame(raf);
+    finalEl.textContent='能量 '+energy+' · 最高 '+best;
+    msgEl.classList.add('show');
+  }
+  function restart(){
+    energy=0;combo=0;time=60;t0=performance.now();
+    energyEl.textContent=0;comboEl.textContent=0;timeEl.textContent=60;
+    msgEl.classList.remove('show');
+    stars=[];comets=[];fx=[];
+    px=W/2;py=H/2;tx=W/2;ty=H/2;lastCombo=0;
+    spawnStars();
+    playing=true;cancelAnimationFrame(raf);raf=requestAnimationFrame(loop);
+  }
+  function loop(){step();draw();raf=requestAnimationFrame(loop);}
+  cv.addEventListener('mousemove',function(ev){
+    var r=cv.getBoundingClientRect();tx=ev.clientX-r.left;ty=ev.clientY-r.top;
+  });
+  cv.addEventListener('touchmove',function(e){
+    e.preventDefault();var t=e.touches[0],r=cv.getBoundingClientRect();tx=t.clientX-r.left;ty=t.clientY-r.top;
+  },{passive:false});
+  addEventListener('keydown',function(e){
+    var k=e.key.toLowerCase();
+    if(k==='w')ty-=14;if(k==='s')ty+=14;if(k==='a')tx-=14;if(k==='d')tx+=14;
+    e.preventDefault();
+  });
+  addEventListener('keyup',function(e){});
+  restart();
+})();
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Star Orbit 极简 js13k","description":"js13k 精神的极简太空收集小游戏","genre":"Action","playMode":"SinglePlayer","url":"https://marvis-arcade.pages.dev/js13k.html","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"}}
+</script>
+</body>
+</html>
