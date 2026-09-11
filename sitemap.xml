@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://marvis-arcade.pages.dev/</loc><lastmod>2026-09-12</lastmod><changefreq>monthly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://marvis-arcade.pages.dev/snake.html</loc><lastmod>2026-09-12</lastmod><priority>0.8</priority></url>
+  <url><loc>https://marvis-arcade.pages.dev/tetris.html</loc><lastmod>2026-09-12</lastmod><priority>0.8</priority></url>
+  <url><loc>https://marvis-arcade.pages.dev/breakout.html</loc><lastmod>2026-09-12</lastmod><priority>0.8</priority></url>
+  <url><loc>https://marvis-arcade.pages.dev/2048.html</loc><lastmod>2026-09-12</lastmod><priority>0.8</priority></url>
+  <url><loc>https://marvis-arcade.pages.dev/rhythm.html</loc><lastmod>2026-09-12</lastmod><priority>0.8</priority></url>
+  <url><loc>https://marvis-arcade.pages.dev/saber.html</loc><lastmod>2026-09-12</lastmod><priority>0.8</priority></url>
+  <url><loc>https://marvis-arcade.pages.dev/rota.html</loc><lastmod>2026-09-12</lastmod><priority>0.8</priority></url>
+  <url><loc>https://marvis-arcade.pages.dev/artillery.html</loc><lastmod>2026-09-12</lastmod><priority>0.8</priority></url>
+  <url><loc>https://marvis-arcade.pages.dev/tower-defense.html</loc><lastmod>2026-09-12</lastmod><priority>0.8</priority></url>
+  <url><loc>https://marvis-arcade.pages.dev/polygons.html</loc><lastmod>2026-09-12</lastmod><priority>0.8</priority></url>
+  <url><loc>https://marvis-arcade.pages.dev/hextris.html</loc><lastmod>2026-09-12</lastmod><priority>0.8</priority></url>
+  <url><loc>https://marvis-arcade.pages.dev/js13k.html</loc><lastmod>2026-09-12</lastmod><priority>0.8</priority></url>
+</urlset>
