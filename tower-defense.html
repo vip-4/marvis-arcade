@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YouTD-lite · 精简塔防 - Marvis Arcade</title>
+<meta name="description" content="轻量塔防：沿路径建造箭塔自动攻击敌人，波次防守、金币经济与升级。纯单文件 HTML5 策略塔防，鼠标/触屏皆可。">
+<link rel="canonical" href="https://marvis-arcade.pages.dev/tower-defense.html">
+<meta property="og:title" content="YouTD-lite · 精简塔防 - Marvis Arcade">
+<meta property="og:description" content="建塔防守波次敌人的轻量塔防。">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#16161a">
+<style>
+  :root{--bg:oklch(15% .02 280);--fg:oklch(90% .02 280);--ac:oklch(76% .14 265);--dim:oklch(60% .03 280);--good:oklch(76% .12 150)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:"Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+  a.back{position:fixed;top:14px;left:16px;font-size:.78rem;color:var(--dim);text-decoration:none;letter-spacing:.05em}
+  a.back:hover{color:var(--ac)}
+  h1{font-size:1.05rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+  #hud{display:flex;gap:20px;font-variant-numeric:tabular-nums;font-size:.9rem;flex-wrap:wrap;justify-content:center}
+  #hud b{color:var(--ac)}
+  .wrap{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+  canvas{background:oklch(20% .03 280);border-radius:12px;box-shadow:0 20px 50px -20px oklch(6% .05 280);touch-action:none}
+  .panel{display:flex;flex-direction:column;gap:10px;min-width:160px}
+  .tower{padding:12px 14px;border-radius:12px;background:oklch(26% .03 280);border:1px solid oklch(32% .04 280);cursor:pointer;line-height:1.5}
+  .tower:hover{background:oklch(30% .04 280)}
+  .tower .n{font-weight:700;color:var(--ac)}
+  .tower .d{font-size:.72rem;color:var(--dim)}
+  .btn{padding:12px;border:0;border-radius:12px;background:var(--ac);color:oklch(15% .05 280);font-weight:800;cursor:pointer;font-size:.95rem}
+  .btn:active{transform:translateY(2px)}
+  .hint{color:var(--dim);font-size:.74rem;line-height:1.7;max-width:220px}
+  #msg{position:fixed;inset:0;display:none;place-items:center;background:oklch(10% .02 280 / .72);color:var(--fg);font-size:1.3rem;text-align:center;flex-direction:column;gap:16px;z-index:20}
+  #msg.show{display:flex}
+  #msg button{padding:12px 30px;border:0;border-radius:10px;background:var(--ac);color:oklch(15% .05 280);font-weight:700;cursor:pointer;font-size:1rem}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← Marvis Arcade</a>
+<h1>YouTD-lite · 精简塔防</h1>
+<div id="hud"><span>金币 <b id="gold">100</b></span><span>波次 <b id="wave">1</b></span><span>生命 <b id="life">10</b></span><span>击破 <b id="kills">0</b></span><span>最高波 <b id="best">0</b></span></div>
+<div class="wrap">
+  <canvas id="cv" width="480" height="360"></canvas>
+  <div class="panel">
+    <div class="tower" data-t="0"><div class="n">箭塔 · 60金</div><div class="d">单体攻击，射程 80</div></div>
+    <div class="tower" data-t="1"><div class="n">炮塔 · 110金</div><div class="d">范围溅射，射程 70，攻速慢</div></div>
+    <div class="tower" data-t="2"><div class="n">缓速塔 · 90金</div><div class="d">减速附近敌人，射程 90</div></div>
+    <button class="btn" id="start">开始 / 下一波</button>
+    <div class="hint">点击可选择一种塔，再到<kbd>空白草地</kbd>上点击建造（不可建在路上）。怪物走到终点会扣生命。</div>
+  </div>
+</div>
+<div id="msg">GAME OVER —— 撑过 10 波即可获胜<div id="final"></div><button onclick="restart()">再来一局</button></div>
+<script>
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+  var goldEl=document.getElementById('gold'),waveEl=document.getElementById('wave'),
+      lifeEl=document.getElementById('life'),killsEl=document.getElementById('kills'),
+      bestEl=document.getElementById('best'),msgEl=document.getElementById('msg'),
+      finalEl=document.getElementById('final');
+  var best=+localStorage.getItem('td.best')||0;bestEl.textContent=best;
+  var COLS=12,ROWS=9,CELL=40;
+  // S-shaped path
+  var path=[];
+  (function(){for(var x=0;x<COLS;x++)path.push([x,2]);for(var y=3;y<ROWS;y++)path.push([COLS-1,y]);
+    for(var x=COLS-2;x>=0;x--)path.push([x,ROWS-1]);})();
+  var pathSet={};path.forEach(function(p){pathSet[p[0]+','+p[1]]=1;});
+  var spawn={x:-0.5,y:2},exit=path[path.length-1];
+  var towers=[],enemies=[],bullets=[],sel=-1,gold=100,life=10,wave=0,playing=false,kills=0;
+  var waveCount=10;
+  function cellOf(px,py){return {x:Math.floor(px/CELL),y:Math.floor(py/CELL)};}
+  function canBuild(c){
+    if(pathSet[c.x+','+c.y])return false;
+    if(c.x<0||c.y<0||c.x>=COLS||c.y>=ROWS)return false;
+    return !towers.some(function(t){return t.x===c.x&&t.y===c.y;});
+  }
+  function build(c,type){
+    var cost=[60,110,90][type];
+    if(gold<cost)return;
+    gold-=cost;goldEl.textContent=gold;
+    towers.push({x:c.x,y:c.y,type:type,cd:0,r:[80,70,90][type],dmg:[16,26,4][type],lvl:1});
+  }
+  function spawnWave(){
+    wave++;waveEl.textContent=wave;
+    var n=Math.min(4+wave*2,18);
+    for(var i=0;i<n;i++){
+      var hp=20+wave*7;
+      setTimeout(function(){
+        if(!playing)return;
+        enemies.push({p:0,hp:hp,speed:2.2+wave*.08,slow:0,alive:true});
+      },i*420);
+    }
+  }
+  function step(){
+    // enemies move along path
+    for(var i=enemies.length-1;i>=0;i--){
+      var e=enemies[i];if(!e.alive)continue;
+      var speed=e.speed*(e.slow>0?0.45:1);
+      e.p+=speed*(e.slow>0?e.slow:1)/10;
+      if(e.slow>0)e.slow-=1;
+      var seg=Math.floor(e.p),t=e.p-seg;
+      if(seg>=path.length-1){ // reached exit
+        e.alive=false;life--;lifeEl.textContent=life;
+        if(life<=0&&playing)end(false);
+        continue;
+      }
+      var p1=path[seg],p2=path[seg+1];
+      e.x=(p1[0]+(p2[0]-p1[0])*t)*CELL+CELL/2;
+      e.y=(p1[1]+(p2[1]-p1[1])*t)*CELL+CELL/2;
+    }
+    // towers fire
+    for(var j=0;j<towers.length;j++){
+      var t=towers[j];if(t.cd>0){t.cd--;continue;}
+      // find target in range
+      var target=null,bd=1e9;
+      for(var k=0;k<enemies.length;k++){
+        var en=enemies[k];if(!en.alive)continue;
+        var d=Math.hypot(en.x-(t.x*CELL+CELL/2),en.y-(t.y*CELL+CELL/2));
+        if(d<=t.r&&d<bd){bd=d;target=en;bdist=d;}
+      }
+      if(t.type===2&&bd<1e9){ // slow tower AoE
+        for(var m=0;m<enemies.length;m++){var ee=enemies[m];if(ee.alive&&Math.hypot(ee.x-t.x*CELL+CELL/2||0,0)<999&&Math.hypot(ee.x-(t.x*CELL+CELL/2),ee.y-(t.y*CELL+CELL/2))<t.r)ee.slow=Math.max(ee.slow,30);}
+        t.cd=18;
+      }else if(target){
+        bullets.push({x:t.x*CELL+CELL/2,y:t.y*CELL+CELL/2,tx:target,spd:6,dmg:t.dmg,aoe:t.type===1,type:t.type});
+        t.cd=t.type===1?26:12;
+      }
+    }
+    // bullets
+    for(var b2=bullets.length-1;b2>=0;b2--){
+      var bl=bullets[b2];
+      if(!bl||!bl.tx||!bl.tx.alive){bullets.splice(b2,1);continue;}
+      var dx=bl.tx.x-bl.x,dy=bl.tx.y-bl.y,dd=Math.hypot(dx,dy);
+      if(dd<10){
+        bullets.splice(b2,1);
+        if(bl.aoe){
+          for(var q=0;q<enemies.length;q++){var en2=enemies[q];if(en2.alive&&Math.hypot(en2.x-bl.tx.x,en2.y-bl.tx.y)<36){en2.hp-=bl.dmg;if(en2.hp<=0)kill(en2);}}
+        }else{
+          bl.tx.hp-=bl.dmg;if(bl.tx.hp<=0)kill(bl.tx);
+        }
+      }else{bl.x+=dx/dd*bl.spd;bl.y+=dy/dd*bl.spd;}
+    }
+    // check wave complete
+    if(playing&&enemies.length===0&&wave<waveCount&&!spawning){spawnWave();}
+    if(playing&&wave>=waveCount&&enemies.length===0)end(true);
+  }
+  var spawning=false;
+  function kill(e){e.alive=false;gold+=8;goldEl.textContent=gold;kills++;killsEl.textContent=kills;}
+  function draw(){
+    ctx.fillStyle='oklch(20% .03 280)';ctx.fillRect(0,0,cv.width,cv.height);
+    // path
+    ctx.strokeStyle='oklch(30% .04 265)';ctx.lineWidth=CELL-10;ctx.lineCap='round';ctx.beginPath();
+    path.forEach(function(p,i){i?ctx.lineTo(p[0]*CELL+CELL/2,p[1]*CELL+CELL/2):ctx.moveTo(p[0]*CELL+CELL/2,p[1]*CELL+CELL/2);});ctx.stroke();
+    // grid faint
+    ctx.strokeStyle='oklch(26% .02 280)';ctx.lineWidth=1;
+    for(var x=0;x<=COLS;x++){ctx.beginPath();ctx.moveTo(x*CELL+.5,0);ctx.lineTo(x*CELL+.5,cv.height);ctx.stroke();}
+    for(var y=0;y<=ROWS;y++){ctx.beginPath();ctx.moveTo(0,y*CELL+.5);ctx.lineTo(cv.width,y*CELL+.5);ctx.stroke();}
+    // exit mark
+    ctx.fillStyle='oklch(70% .18 30)';ctx.font='18px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('🏁',exit[0]*CELL+CELL/2,exit[1]*CELL+CELL/2);
+    // towers
+    towers.forEach(function(t){
+      var cx=t.x*CELL+CELL/2,cy=t.y*CELL+CELL/2;
+      ctx.fillStyle=t.type===0?'var(--ac)':t.type===1?'oklch(72% .18 30)':'oklch(76% .13 150)';
+      ctx.beginPath();ctx.arc(cx,cy,13,0,7);ctx.fill();
+      ctx.strokeStyle=sel===t.type?'rgba(255,255,255,.5)':'rgba(255,255,255,.15)';
+      ctx.beginPath();ctx.arc(cx,cy,t.r,0,7);ctx.stroke();
+    });
+    // enemies
+    enemies.forEach(function(e){
+      if(!e.alive)return;
+      ctx.fillStyle=e.slow>0?'oklch(76% .13 150)':'oklch(74% .16 350)';
+      ctx.beginPath();ctx.arc(e.x,e.y,9,0,7);ctx.fill();
+      ctx.fillStyle='oklch(95% .02 60)';ctx.font='9px system-ui';ctx.textAlign='center';
+      ctx.fillText(e.hp,e.x,e.y-13);
+    });
+    // bullets
+    bullets.forEach(function(b){ctx.fillStyle='oklch(80% .2 60)';ctx.beginPath();ctx.arc(b.x,b.y,3,0,7);ctx.fill();});
+    // spawn arrow
+    ctx.fillStyle='var(--dim)';ctx.font='20px system-ui';ctx.textAlign='center';
+    ctx.fillText('▶',20,2*CELL+CELL/2);
+  }
+  var raf=null;
+  function loop(){step();draw();raf=requestAnimationFrame(loop);}
+  function end(win){
+    playing=false;
+    if(wave-1>best){best=wave-1;localStorage.setItem('td.best',best);}
+    bestEl.textContent=best;
+    finalEl.textContent='到达第 '+wave+' 波 · 击破 '+kills+' 只 · 最高波 '+best;
+    msgEl.classList.add('show');
+  }
+  function restart(){
+    towers=[];enemies=[];bullets=[];gold=100;life=10;wave=0;kills=0;spawning=false;
+    goldEl.textContent=100;lifeEl.textContent=10;waveEl.textContent=0;killsEl.textContent=0;
+    msgEl.classList.remove('show');playing=false;sel=-1;
+    spawnWave();playing=true;
+  }
+  document.getElementById('start').addEventListener('click',function(){
+    if(!playing){restart();}
+    else if(enemies.length===0){spawnWave();}
+  });
+  document.querySelectorAll('.tower').forEach(function(el){
+    el.addEventListener('click',function(){sel=+el.dataset.t;});
+  });
+  cv.addEventListener('click',function(ev){
+    var r=cv.getBoundingClientRect();
+    var x=(ev.clientX-r.left),y=(ev.clientY-r.top);
+    var c=cellOf(x,y);
+    if(sel>=0&&canBuild(c)){build(c,sel);}
+  });
+  // remove dead enemies
+  setInterval(function(){enemies=enemies.filter(function(e){return e.alive;});},500);
+  loop();
+})();
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"YouTD-lite 精简塔防","description":"沿路径建塔防守波次敌人的轻量塔防游戏","genre":"Strategy","playMode":"SinglePlayer","url":"https://marvis-arcade.pages.dev/tower-defense.html","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"}}
+</script>
+</body>
+</html>
