@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Breakout · 打砖块</title>
+<style>
+  :root{--bg:oklch(15% .02 40);--fg:oklch(90% .02 40);--ac:oklch(74% .16 60);--dim:oklch(60% .025 40)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:"Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+  h1{font-size:1.1rem;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+  #hud{display:flex;gap:24px;font-variant-numeric:tabular-nums;font-size:.9rem}
+  #hud b{color:var(--ac)}
+  canvas{background:oklch(21% .025 40);border-radius:10px;box-shadow:0 20px 50px -20px oklch(5% .06 40);touch-action:none;max-width:96vw}
+  .hint{color:var(--dim);font-size:.78rem}
+  kbd{background:oklch(28% .02 40);padding:2px 7px;border-radius:5px;font-size:.72rem}
+</style>
+</head>
+<body>
+<h1>Breakout · 打砖块</h1>
+<div id="hud"><span>得分 <b id="score">0</b></span><span>关卡 <b id="lvl">1</b></span><span>生命 <b id="life">3</b></span></div>
+<canvas id="cv" width="480" height="560"></canvas>
+<div class="hint">鼠标/触屏移动挡板 · <kbd>空格</kbd>发球</div>
+<script>
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+  var W=cv.width,H=cv.height;
+  var pw=90,ph=12,pad,ball,balls,bricks,score,lvl,lives,running,raf,paused=false;
+  var BR=[{r:7,c:[12,10,8,6]}];
+  function build(){
+    bricks=[];
+    var rows=6,cols=10,gap=4,m=12,bw=(W-m*2-gap*(cols-1))/cols,bh=22;
+    for(var r=0;r<rows;r++)for(var c=0;c<cols;c++)
+      bricks.push({x:m+c*(bw+gap),y:70+r*(bh+gap),w:bw,h:bh,lives:lvl>1&&r<2?2:1,solid:false,c:BR[0].r[r]});
+  }
+  function reset(){
+    score=0;lvl=1;lives=3;build();serve();
+    document.getElementById('score').textContent=0;
+    document.getElementById('lvl').textContent=lvl;
+    document.getElementById('life').textContent=lives;
+  }
+  function serve(){
+    pad={x:W/2-pw/2};
+    ball={x:W/2,y:H-ph-16,dx:0,dy:0,speed:5,moved:false};
+    running=false;
+  }
+  function launch(){
+    running=true;ball.moved=true;
+    var a=(-55-Math.random()*70)*Math.PI/180;
+    ball.dx=Math.cos(a)*ball.speed;ball.dy=Math.sin(a)*ball.speed;
+  }
+  function step(){
+    if(!running)return;
+    ball.x+=ball.dx;ball.y+=ball.dy;
+    if(ball.x<8||ball.x>W-8){ball.dx*=-1;ball.x=Math.max(8,Math.min(W-8,ball.x));}
+    if(ball.y<8){ball.dy*=-1;ball.y=8;}
+    if(ball.y>H+10){lives--;document.getElementById('life').textContent=lives;if(lives<0){lives=0;lose();return;}serve();return;}
+    if(ball.y+5>=pad.y&&ball.y+5<=pad.y+ph&&ball.x>pad.x-4&&ball.x<pad.x+pw+4&&ball.dy>0){
+      var rel=(ball.x-(pad.x+pw/2))/(pw/2); // -1..1
+      var ang=rel*Math.PI*0.72;
+      ball.dx=Math.sin(ang)*ball.speed;
+      ball.dy=-Math.abs(Math.cos(ang))*ball.speed;
+      ball.y=pad.y-5;
+    }
+    for(var i=bricks.length-1;i>=0;i--){
+      var b=bricks[i];
+      if(ball.x+5>b.x&&ball.x-5<b.x+b.w&&ball.y+5>b.y&&ball.y-5<b.y+b.h){
+        var overlapX=(ball.x-Math.max(b.x,Math.min(ball.x,b.x+b.w)));
+        var overlapY=(ball.y-Math.max(b.y,Math.min(ball.y,b.y+b.h)));
+        if(Math.abs(overlapY)>Math.abs(overlapX))ball.dy*=-1;else ball.dx*=-1;
+        b.lives--;score+=10*lvl;
+        document.getElementById('score').textContent=score;
+        if(b.lives<=0)bricks.splice(i,1);
+        break;
+      }
+    }
+    if(!bricks.length){lvl++;build();document.getElementById('lvl').textContent=lvl;serve();}
+  }
+  function lose(){
+    document.getElementById('msg').textContent='GAME OVER · 最终得分 '+score;
+    document.getElementById('msg').classList.add('show');
+  }
+  function draw(){
+    ctx.fillStyle='oklch(21% .025 40)';ctx.fillRect(0,0,W,H);
+    bricks.forEach(function(b){
+      ctx.fillStyle='oklch('+(90-b.c)+'% '+(0.06+b.c*0.012)+' 55)';
+      ctx.fillRect(b.x,b.y,b.w,b.h);
+      if(b.lives>1){ctx.fillStyle='oklch(95% .02 40/.4)';ctx.fillRect(b.x+3,b.y+3,b.w-6,2);}
+    });
+    ctx.fillStyle='oklch(80% .14 60)';ctx.fillRect(pad.x,pad.y,pw,ph);
+    ctx.beginPath();ctx.arc(ball.x,ball.y,5,0,7);ctx.fillStyle='oklch(92% .02 40)';ctx.fill();
+    if(!running){
+      ctx.fillStyle='oklch(90% .02 40)';ctx.font='600 18px system-ui';ctx.textAlign='center';
+      ctx.fillText('按 空格 发球',W/2,H/2+40);
+    }
+  }
+  var msg=document.createElement('div');
+  msg.id='msg';msg.style.cssText='position:fixed;inset:0;display:none;place-items:center;background:oklch(9% .02 40/.75);font-size:1.4rem;text-align:center;cursor:pointer;z-index:50';
+  msg.addEventListener('click',function(){msg.classList.remove('show');reset();});
+  var btn=document.createElement('div');
+  btn.textContent='再来一局';btn.style.cssText='position:absolute;margin-top:110px;font-size:1rem;background:oklch(74% .16 60);color:#222;padding:12px 28px;border-radius:10px;font-weight:700';
+  btn.addEventListener('click',function(ev){ev.stopPropagation();msg.classList.remove('show');reset();});
+  msg.appendChild(btn);
+  document.body.appendChild(msg);
+
+  addEventListener('keydown',function(e){
+    if(e.key===' '||e.key==='Spacebar'){if(lives>=0){if(!running)launch();e.preventDefault();}}
+  });
+  cv.addEventListener('mousemove',function(e){
+    var r=cv.getBoundingClientRect();
+    pad.x=Math.max(0,Math.min(W-pw,(e.clientX-r.left)*W/r.width-pw/2));
+  });
+  cv.addEventListener('touchmove',function(e){
+    e.preventDefault();
+    var t=e.touches[0],r=cv.getBoundingClientRect();
+    pad.x=Math.max(0,Math.min(W-pw,(t.clientX-r.left)*W/r.width-pw/2));
+  },{passive:false});
+  cv.addEventListener('touchstart',function(e){e.preventDefault();if(!running)launch();},{passive:false});
+  function loop(){step();draw();requestAnimationFrame(loop);}
+  reset();loop();
+})();
+</script>
+</body>
+</html>
