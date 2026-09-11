@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Open Saber · 四向斩击 - Marvis Arcade</title>
+<meta name="description" content="类 Open Saber 的四向即时斩击游戏：方块从四方袭来，沿方向键劈砍时机得分，连击加成、生命制。纯单文件 HTML5，键盘与触屏皆可。">
+<link rel="canonical" href="https://marvis-arcade.pages.dev/saber.html">
+<meta property="og:title" content="Open Saber · 四向斩击 - Marvis Arcade">
+<meta property="og:description" content="类 Open Saber 的四向即时斩击：时机与方向匹配判定，连击加分。">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#141a16">
+<style>
+  :root{--bg:oklch(15% .02 155);--fg:oklch(90% .03 155);--ac:oklch(76% .13 155);--dim:oklch(60% .03 155);--bad:oklch(70% .16 30)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:"Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+  a.back{position:fixed;top:14px;left:16px;font-size:.78rem;color:var(--dim);text-decoration:none;letter-spacing:.05em}
+  a.back:hover{color:var(--ac)}
+  h1{font-size:1.05rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+  #hud{display:flex;gap:22px;font-variant-numeric:tabular-nums;font-size:.9rem}
+  #hud b{color:var(--ac)}
+  #stage{position:relative;width:300px;height:300px;background:oklch(22% .03 155);border-radius:12px;overflow:hidden;box-shadow:0 20px 50px -20px oklch(6% .05 155);touch-action:none}
+  .ring{position:absolute;left:50%;top:50%;width:64px;height:64px;transform:translate(-50%,-50%);border:2px dashed oklch(50% .03 155);border-radius:50%;z-index:2}
+  .core{position:absolute;left:50%;top:50%;width:14px;height:14px;transform:translate(-50%,-50%);background:var(--fg);border-radius:50%;z-index:2}
+  .blk{position:absolute;width:30px;height:30px;border-radius:6px;display:grid;place-items:center;color:oklch(14% .05 155);font-weight:900;z-index:3}
+  #fx{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);font-size:1.2rem;font-weight:800;opacity:0;transition:opacity .18s;pointer-events:none;z-index:5}
+  #fx.show{opacity:1}#fx.perfect{color:var(--ac)}#fx.miss{color:var(--bad)}
+  #keys{display:flex;gap:10px;margin-top:4px}
+  .k{width:62px;height:50px;border:0;border-radius:10px;background:oklch(27% .03 155);color:var(--fg);font-size:1rem;font-weight:600;cursor:pointer}
+  .k:active{background:var(--ac);color:oklch(15% .05 155)}
+  .hint{color:var(--dim);font-size:.76rem;text-align:center;line-height:1.7}
+  kbd{background:oklch(27% .03 155);padding:2px 7px;border-radius:5px;font-size:.72rem}
+  #msg{position:fixed;inset:0;display:none;place-items:center;background:oklch(9% .02 155 / .74);color:var(--fg);font-size:1.3rem;text-align:center;cursor:pointer;flex-direction:column;gap:18px}
+  #msg.show{display:flex}
+  #msg button{padding:12px 30px;border:0;border-radius:10px;background:var(--ac);color:oklch(15% .05 155);font-weight:700;cursor:pointer;font-size:1rem}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← Marvis Arcade</a>
+<h1>Open Saber · 四向斩击</h1>
+<div id="hud"><span>得分 <b id="score">0</b></span><span>连击 <b id="combo">0</b></span><span>生命 <b id="lives">3</b></span><span>时间 <b id="time">60</b></span><span>最高 <b id="best">0</b></span></div>
+<div id="stage"><div class="ring"></div><div class="core"></div><div id="fx">PERFECT</div></div>
+<div id="keys"><button class="k" data-d="0">◀</button><button class="k" data-d="1">▼</button><button class="k" data-d="2">▲</button><button class="k" data-d="3">▶</button></div>
+<div class="hint">方块从四方向你袭来，<kbd>方向键</kbd>/<kbd>WASD</kbd> 朝箭头同向挥刀 · 触屏点按四向按钮</div>
+<div id="msg">TIME UP / GAME OVER<div id="final"></div><button onclick="restart()">再来一局</button></div>
+<script>
+(function(){
+  var stage=document.getElementById('stage'),scoreEl=document.getElementById('score'),
+      comboEl=document.getElementById('combo'),livesEl=document.getElementById('lives'),
+      timeEl=document.getElementById('time'),bestEl=document.getElementById('best'),
+      fxEl=document.getElementById('fx'),msgEl=document.getElementById('msg'),finalEl=document.getElementById('final');
+  var S=300,C=S/2,HIT=44; // hit radius px around core
+  var best=+localStorage.getItem('saber.best')||0;bestEl.textContent=best;
+  var blocks=[],score=0,combo=0,lives=3,time=60,playing=false,raf=null;
+  var parts=[];
+  function spawn(){
+    var d=(Math.random()*4)|0;
+    var b={d:d,x:C,y:C,t0:performance.now(),k:(Math.random()*1.4+.7),dead:false};
+    blocks.push(b);renderBlock(b);
+  }
+  function renderBlock(b){
+    var el=document.createElement('div');el.className='blk';
+    el.textContent=['◀','▼','▲','▶'][b.d];
+    el.style.background=['#ffd27f','#7fd9ff','#8fff9f','#ff9fb5'][b.d];
+    b.el=el;stage.appendChild(el);
+  }
+  var dirVec=[[-1,0],[0,1],[0,-1],[1,0]];
+  function swing(d){
+    if(!playing)return;
+    var hit=null,bb=1e9;
+    for(var i=0;i<blocks.length;i++){var b=blocks[i];if(b.dead)continue;var r=Math.hypot(b.x-C,b.y-C);if(r<=HIT&&Math.abs(r-bb)<10){hit=b;bb=r;break;}}
+    if(hit&&hit.d===d){
+      hit.dead=true;combo++;score+=10+combo*5;
+      scoreEl.textContent=score;comboEl.textContent=combo;
+      fx('+'+combo,'perfect');burst(hit.x,hit.y);
+      if(--hit.el.parentNode)hit.el.remove();
+    }else{
+      fx('MISS','miss');
+      if(lives>0){lives--;livesEl.textContent=lives;if(lives<=0)end();}
+    }
+  }
+  function burst(x,y){
+    for(var i=0;i<8;i++){
+      var a=i/8*Math.PI*2,p={x:x,y:y,vx:Math.cos(a)*2.4,vy:Math.sin(a)*2.4,life:16};
+      parts.push(p);
+      var d=document.createElement('div');d.style.cssText='position:absolute;width:5px;height:5px;border-radius:50%;background:'+bcolor(0)+';pointer-events:none;z-index:4';p.el=d;stage.appendChild(d);
+    }
+  }
+  function bcolor(i){return ['#ffd27f','#ffffff','#8fff9f','#7fd9ff'][i&3];}
+  function fx(txt,cls){fxEl.textContent=txt;fxEl.className='show '+cls;clearTimeout(fx._t);fxEl._t=setTimeout(function(){fxEl.className='';},150);}
+  function step(){
+    if(!playing)return;
+    var now=performance.now();
+    for(var i=blocks.length-1;i>=0;i--){
+      var b=blocks[i];if(b.dead)continue;
+      var dx=dirVec[b.d][0],dy=dirVec[b.d][1];
+      b.x+=dx*b.k*1.6;b.y+=dy*b.k*1.6;
+      b.el.style.left=(b.x-15)+'px';b.el.style.top=(b.y-15)+'px';
+      if(Math.hypot(b.x-C,b.y-C)<10&&!b.reached){ // reached core
+        b.reached=true;b.dead=true;b.el.remove();
+        fx('MISS','miss');beep(180,.15,'sawtooth');
+        combo=0;comboEl.textContent=0;
+        if(--lives<=0)end();livesEl.textContent=Math.max(0,lives);
+      }
+    }
+    for(var j=parts.length-1;j>=0;j--){var p=parts[j];p.life--;if(p.life<=0){p.el.remove();parts.splice(j,1);continue;}p.x+=p.vx;p.y+=p.vy;p.el.style.left=p.x+'px';p.el.style.top=p.y+'px';p.el.style.opacity=p.life/16;}
+    // timer
+    var tLeft=Math.max(0,60-Math.floor((now-tStart)/1000));
+    if(tLeft!==time){time=tLeft;timeEl.textContent=time;if(time<=0)end();}
+    raf=requestAnimationFrame(step);
+  }
+  var audioCtx=null,tStart=0;
+  function beep(f,d,ty){if(!audioCtx)return;var o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=ty||'square';o.frequency.value=f;g.gain.setValueAtTime(.1,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+d);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d);}
+  function end(){
+    playing=false;cancelAnimationFrame(raf);
+    if(score>best){best=score;localStorage.setItem('saber.best',best);}
+    finalEl.textContent='得分 '+score+' · 最高 '+best;
+    msgEl.classList.add('show');
+  }
+  function restart(){
+    blocks.forEach(function(b){if(b.el)b.el.remove();});blocks=[];parts.forEach(function(p){if(p.el)p.el.remove();});parts=[];
+    score=0;combo=0;lives=3;time=60;scoreEl.textContent=0;comboEl.textContent=0;livesEl.textContent=3;timeEl.textContent=60;
+    msgEl.classList.remove('show');
+    if(!audioCtx){try{audioCtx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+    if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
+    playing=true;tStart=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(step);
+    spawn();setTimeout(spawn,650);setTimeout(spawn,1250);
+  }
+  addEventListener('keydown',function(e){
+    var m={ArrowLeft:0,ArrowDown:1,ArrowUp:2,ArrowRight:3,a:0,s:1,w:2,d:3};
+    var k=e.key.length>1?e.key:e.key.toLowerCase();
+    if(k in m){e.preventDefault();swing(m[k]);}
+    if((k===' '||k==='r')&&!playing){restart();}
+  });
+  document.querySelectorAll('.k').forEach(function(b){b.addEventListener('pointerdown',function(){swing(+b.dataset.d);});});
+  var spawnIdle=null;
+  var spawner=setInterval(function(){if(playing)spawn();},1000);
+  restart();
+})();
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Open Saber 四向斩击","description":"类 Open Saber 的四向即时斩击小游戏","genre":"Action","playMode":"SinglePlayer","url":"https://marvis-arcade.pages.dev/saber.html","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"}}
+</script>
+</body>
+</html>
