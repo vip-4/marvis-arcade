@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snake · 贪吃蛇</title>
+<style>
+  :root{--bg:oklch(16% .02 160);--fg:oklch(90% .02 160);--ac:oklch(78% .14 150);--dim:oklch(60% .02 160)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:"Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px}
+  h1{font-size:1.1rem;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+  #hud{display:flex;gap:24px;font-variant-numeric:tabular-nums;font-size:.9rem}
+  #hud b{color:var(--ac)}
+  canvas{background:oklch(22% .025 160);border-radius:10px;box-shadow:0 20px 50px -20px oklch(6% .05 160);touch-action:none;max-width:96vw}
+  #msg{position:fixed;inset:0;display:none;place-items:center;background:oklch(10% .02 160 / .72);color:var(--fg);font-size:1.4rem;text-align:center;cursor:pointer}
+  #msg.show{display:grid}
+  #msg button{position:absolute;margin-top:120px;padding:12px 28px;border:0;border-radius:10px;background:var(--ac);color:oklch(15% .05 150);font-weight:700;cursor:pointer;font-size:1rem}
+  .hint{color:var(--dim);font-size:.78rem}
+  kbd{background:oklch(28% .02 160);padding:2px 7px;border-radius:5px;font-size:.72rem}
+</style>
+</head>
+<body>
+<h1>Snake · 贪吃蛇</h1>
+<div id="hud"><span>得分 <b id="score">0</b></span><span>最高 <b id="best">0</b></span><span>速度 <b id="spd">1</b></span></div>
+<canvas id="cv" width="400" height="400"></canvas>
+<div class="hint"><kbd>WASD</kbd> / <kbd>方向键</kbd> 移动 · 触屏可滑动</div>
+<div id="msg">GAME OVER<div></div><button onclick="reset()">再来一局</button></div>
+<script>
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+  var N=20,CELL=cv.width/N,speedBase=130,minSpeed=55;
+  var snake,dir,nextDir,food,score,best,dead,id,tick=0;
+  best=+localStorage.getItem('snake.best')||0;
+  function reset(){
+    snake=[{x:10,y:10},{x:9,y:10},{x:8,y:10}];
+    dir={x:1,y:0};nextDir=dir;score=0;dead=false;tick=0;
+    spawn();document.getElementById('msg').classList.remove('show');
+    document.getElementById('score').textContent=0;
+    clearInterval(id);loop();
+  }
+  function spawn(){
+    do{food={x:(Math.random()*N)|0,y:(Math.random()*N)|0};}while(snake.some(s=>s.x===food.x&&s.y===food.y));
+  }
+  function step(){
+    dir=nextDir;
+    var h={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+    if(h.x<0||h.y<0||h.x>=N||h.y>=N||snake.some(s=>s.x===h.x&&s.y===h.y)){return die();}
+    snake.unshift(h);
+    if(h.x===food.x&&h.y===food.y){
+      score+=10;tick++;
+      document.getElementById('score').textContent=score;
+      if(score>best){best=score;localStorage.setItem('snake.best',best);}
+      document.getElementById('best').textContent=best;
+      document.getElementById('spd').textContent=tick+1;
+      spawn();
+    }else{snake.pop();}
+    draw();
+  }
+  function die(){
+    dead=true;clearInterval(id);
+    document.getElementById('msg').classList.add('show');
+    draw();
+  }
+  function loop(){
+    clearInterval(id);
+    id=setInterval(step,Math.max(minSpeed,speedBase-tick*5));
+  }
+  function draw(){
+    ctx.fillStyle='oklch(22% .025 160)';ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.fillStyle='oklch(78% .16 150)';
+    ctx.beginPath();ctx.arc(food.x*CELL+CELL/2,food.y*CELL+CELL/2,CELL*0.3,0,7);ctx.fill();
+    snake.forEach(function(s,i){
+      ctx.fillStyle=i===0?(dead?'oklch(70% .18 45)':'oklch(82% .14 150)'):'oklch(62% .12 155)';
+      var g=1;ctx.fillRect(s.x*CELL+g,s.y*CELL+g,CELL-g*2,CELL-g*2);
+    });
+  }
+  addEventListener('keydown',function(e){
+    var m={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},w:{x:0,y:-1},s:{x:0,y:1},a:{x:-1,y:0},d:{x:1,y:0}};
+    var k=e.key.length>1?e.key:e.key.toLowerCase();
+    var nd=m[k];
+    if(nd&&!(nd.x===-dir.x&&nd.y===-dir.y)){nextDir=nd;e.preventDefault();}
+    if((k===' '||k==='r')&&dead){reset();}
+  });
+  var px=null,py=null;
+  cv.addEventListener('touchstart',function(e){var t=e.touches[0];px=t.clientX;py=t.clientY;e.preventDefault();},{passive:false});
+  cv.addEventListener('touchmove',function(e){
+    e.preventDefault();var t=e.touches[0];
+    var dx=t.clientX-px,dy=t.clientY-py;
+    if(Math.abs(dx)>8||Math.abs(dy)>8){
+      var nd=Math.abs(dx)>Math.abs(dy)?{x:dx>0?1:-1,y:0}:{x:0,y:dy>0?1:-1};
+      if(!(nd.x===-dir.x&&nd.y===-dir.y))nextDir=nd;
+      px=t.clientX;py=t.clientY;
+    }
+  },{passive:false});
+  reset();
+})();
+</script>
+</body>
+</html>
