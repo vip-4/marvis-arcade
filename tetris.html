@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tetris · 俄罗斯方块</title>
+<style>
+  :root{--bg:oklch(15% .02 290);--fg:oklch(90% .02 290);--ac:oklch(72% .17 290);--dim:oklch(60% .025 290)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:"Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+  h1{font-size:1.1rem;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+  .wrap{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+  canvas{background:oklch(21% .025 290);border-radius:10px;box-shadow:0 20px 50px -20px oklch(4% .05 290)}
+  .side{display:flex;flex-direction:column;gap:14px;min-width:90px}
+  .side .box{background:oklch(21% .025 290);border-radius:10px;padding:12px;font-size:.8rem;color:var(--dim)}
+  .side b{color:var(--ac);font-variant-numeric:tabular-nums;display:block;margin-top:4px;font-size:1.05rem}
+  #msg{position:fixed;inset:0;display:none;place-items:center;background:oklch(9% .02 290/.72);font-size:1.4rem;text-align:center;cursor:pointer}
+  #msg.show{display:grid}
+  #msg button{position:absolute;margin-top:120px;padding:12px 28px;border:0;border-radius:10px;background:var(--ac);color:#111;font-weight:700;cursor:pointer;font-size:1rem}
+  .hint{color:var(--dim);font-size:.78rem}
+  kbd{background:oklch(28% .02 290);padding:2px 7px;border-radius:5px;font-size:.72rem}
+</style>
+</head>
+<body>
+<h1>Tetris · 俄罗斯方块</h1>
+<div class="wrap">
+  <canvas id="cv" width="200" height="400"></canvas>
+  <div class="side">
+    <div class="box">得分<b id="score">0</b></div>
+    <div class="box">行数<b id="lines">0</b></div>
+    <div class="box">下一块<canvas id="nx" width="80" height="80" style="display:block;margin-top:6px;width:80px;height:80px"></canvas></div>
+  </div>
+</div>
+<div class="hint"><kbd>←→</kbd>移动 <kbd>↑</kbd>旋转 <kbd>↓</kbd>软降 <kbd>空格</kbd>硬降</div>
+<div id="msg">GAME OVER<div></div><button onclick="reset()">再来一局</button></div>
+<script>
+(function(){
+  var COLS=10,ROWS=20,CS=20;
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+  var ncv=document.getElementById('nx'),nctx=ncv.getContext('2d');
+  var SHAPES=[[[1,1,1,1]],
+    [[1,1],[1,1]],
+    [[0,1,0],[1,1,1]],
+    [[1,0,0],[1,1,1]],
+    [[0,0,1],[1,1,1]],
+    [[0,1,1],[1,1,0]],
+    [[1,1,0],[0,1,1]]];
+  var COLORS=['oklch(70% .19 300)','oklch(76% .15 60)','oklch(74% .16 120)','oklch(72% .17 200)','oklch(72% .18 250)','oklch(74% .17 30)','oklch(72% .15 170)'];
+  var board,cur,next,score,lines,dead,dropId,acc=0;
+  var DROP=800;
+  function reset(){
+    board=Array.from({length:ROWS},function(){return Array(COLS).fill(0);});
+    score=0;lines=0;dead=false;acc=0;
+    next={m:SHAPES[(Math.random()*7)|0],c:0,r:0};
+    spawn();
+    document.getElementById('msg').classList.remove('show');
+    document.getElementById('score').textContent=0;
+    document.getElementById('lines').textContent=0;
+    clearInterval(dropId);
+    dropId=setInterval(function(){
+      if(dead)return; acc+=DROP;
+      if(acc>=DROP){acc=0;gravity();}
+      draw();
+    },250);
+    draw();
+  }
+  function spawn(){
+    var m=next.m;cur={m:m,c:next.c,row:0,col:(COLS>>1)-(m[0].length>>1)};
+    next={m:SHAPES[(Math.random()*7)|0],c:0,r:0};
+    if(!valid(cur))dead=true;
+    drawNext();
+  }
+  function valid(p){
+    for(var y=0;y<p.m.length;y++)for(var x=0;x<p.m[y].length;x++){
+      if(!p.m[y][x])continue;
+      var X=p.col+x,Y=p.row+y;
+      if(X<0||X>=COLS||Y>=ROWS)return false;
+      if(Y>=0&&board[Y][X])return false;
+    }
+    return true;
+  }
+  function gravity(){
+    var p={m:cur.m,c:cur.c,row:cur.row+1,col:cur.col};
+    if(valid(p)){cur=p;return;}
+    lock();
+    if(!dead)spawn();
+  }
+  function lock(){
+    for(var y=0;y<cur.m.length;y++)for(var x=0;x<cur.m[y].length;x++){
+      if(!cur.m[y][x])continue;
+      var Y=cur.row+y;
+      if(Y<0){dead=true;return;}
+      board[Y][cur.col+x]=cur.c+1;
+    }
+    clearLines();
+    acc=0;
+  }
+  function clearLines(){
+    var full=[];
+    for(var y=ROWS-1;y>=0;y--)if(board[y].every(function(c){return c;}))full.push(y);
+    if(!full.length)return;
+    full.forEach(function(y){
+      board.splice(y,1);board.unshift(Array(COLS).fill(0));
+    });
+    var n=full.length;
+    score+=[0,100,300,500,800][n];
+    lines+=n;
+    document.getElementById('score').textContent=score;
+    document.getElementById('lines').textContent=lines;
+  }
+  function rot(){
+    var m=cur.m,rows=m.length,cols=m[0].length,s=Array.from({length:cols},function(_,x){return Array.from({length:rows},function(_,y){return m[rows-1-y][x];});});
+    var p={m:s,c:cur.c,row:cur.row,col:cur.col};
+    var kicks=[[0,0],[0,-1],[0,1],[-1,0],[1,0],[-2,0],[2,0]];
+    for(var i=0;i<kicks.length;i++){var q={m:s,c:cur.c,row:cur.row+kicks[i][1],col:cur.col+kicks[i][0]};if(valid(q)){cur=q;return;}}
+  }
+  function drawCell(g,x,y,c){
+    g.fillStyle=c;var g2=x*CS,y2=y*CS;
+    g.fillRect(g2+1,y2+1,CS-2,CS-2);
+    g.fillStyle='oklch(96% .01 290/.25)';g.fillRect(g2+2,y2+2,CS-4,2);
+  }
+  function draw(){
+    ctx.fillStyle='oklch(21% .025 290)';ctx.fillRect(0,0,cv.width,cv.height);
+    for(var y=0;y<ROWS;y++)for(var x=0;x<COLS;x++)if(board[y][x])drawCell(ctx,x,y,COLORS[board[y][x]-1]);
+    if(!dead&&cur){
+      var gy=cur.row;
+      while(valid({m:cur.m,c:cur.c,row:gy+1,col:cur.col}))gy++;
+      for(var y=0;y<cur.m.length;y++)for(var x=0;x<cur.m[y].length;x++){
+        if(!cur.m[y][x])continue;
+        ctx.fillStyle='oklch(70% .1 290/.22)';
+        ctx.fillRect((cur.col+x)*CS+1,(gy+y)*CS+1,CS-2,CS-2);
+      }
+      for(var y=0;y<cur.m.length;y++)for(var x=0;x<cur.m[y].length;x++)
+        if(cur.m[y][x])drawCell(ctx,cur.col+x,cur.row+y,COLORS[cur.c]);
+    }
+  }
+  function drawNext(){
+    nctx.fillStyle='oklch(21% .025 290)';nctx.fillRect(0,0,80,80);
+    var m=next.m,o=80/2,cs=14;
+    var ox=o-((m[0].length*cs)>>1),oy=o-((m.length*cs)>>1);
+    for(var y=0;y<m.length;y++)for(var x=0;x<m[y].length;x++)if(m[y][x]){
+      nctx.fillStyle=COLORS[0];
+      nctx.fillRect(ox+x*cs+1,oy+y*cs+1,cs-2,cs-2);
+    }
+  }
+  addEventListener('keydown',function(e){
+    if(dead)return;
+    switch(e.key){
+      case 'ArrowLeft':{var p={m:cur.m,c:cur.c,row:cur.row,col:cur.col-1};if(valid(p))cur=p;e.preventDefault();break;}
+      case 'ArrowRight':{var p={m:cur.m,c:cur.c,row:cur.row,col:cur.col+1};if(valid(p))cur=p;e.preventDefault();break;}
+      case 'ArrowDown':{gravity();e.preventDefault();break;}
+      case 'ArrowUp':{rot();e.preventDefault();break;}
+      case ' ':case 'Spacebar':{while(valid({m:cur.m,c:cur.c,row:cur.row+1,col:cur.col}))cur.row++;lock();if(!dead)spawn();e.preventDefault();break;}
+    }
+    draw();
+  });
+  reset();
+})();
+</script>
+</body>
+</html>
