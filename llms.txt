@@ -1,0 +1,30 @@
+# Marvis Arcade
+
+> https://marvis-arcade.pages.dev — 12 款即点即玩的轻量级网页游戏合集，每款为纯 HTML/CSS/JavaScript 单文件实现，零后端、零依赖、零追踪，打开即玩，支持键盘与触屏，最高分通过 localStorage 本地存档。
+
+Marvis Arcade 是一个纯静态托管的小游戏合集站点，部署于 Cloudflare Pages 与 GitHub Pages。全部游戏无需安装、无需账号、无加载等待，适合作为轻量 HTML5 游戏参考与直接游玩入口。站点支持中文界面，游戏名均有中文与英文双名。
+
+## Games
+
+- [贪吃蛇 Snake](https://marvis-arcade.pages.dev/snake.html): 经典网格贪吃，吃豆增长逐级加速，最高分本地存档。
+- [俄罗斯方块 Tetris](https://marvis-arcade.pages.dev/tetris.html): 7-bag 随机、SRS 旋转、消行计分与下一块预览。
+- [打砖块 Breakout](https://marvis-arcade.pages.dev/breakout.html): 弹球 AABB 碰撞、挡板角度控制、多血量砖块。
+- [2048 数字合并](https://marvis-arcade.pages.dev/2048.html): 滑动合并数字经典益智，合并动画与最高分持久化。
+- [节奏打击 Rhythm](https://marvis-arcade.pages.dev/rhythm.html): 四键音符下落，Perfect/Good 判定、连击加分。
+- [四向斩击 Open Saber](https://marvis-arcade.pages.dev/saber.html): 方块四方袭来，沿方向劈砍时机得分、连击与生命制。
+- [重力翻转迷宫 ROTA](https://marvis-arcade.pages.dev/rota.html): 旋转重力引导小球滚出迷宫，随机关卡变难。
+- [炮兵对决 Artillery](https://marvis-arcade.pages.dev/artillery.html): 抛物线弹道，调角度力度命中目标，风向影响。
+- [精简塔防 YouTD-lite](https://marvis-arcade.pages.dev/tower-defense.html): 沿路径建塔迎击波次敌人，金币经济与升级。
+- [多边形堆叠 Polygonfall](https://marvis-arcade.pages.dev/polygons.html): 多角块旋转堆叠，整行填满消除，等级递进。
+- [六边形拼块 Hextris](https://marvis-arcade.pages.dev/hextris.html): 六角格蜂窝成环消除，逐步加速提级。
+- [极简太空 Star Orbit](https://marvis-arcade.pages.dev/js13k.html): 收集星尘能量、躲避彗星，60 秒倒计时。
+
+## 技术特点
+- 单文件架构：每款游戏全部逻辑与样式内联于一个 .html 文件。
+- 零依赖：不使用任何框架、CDN 或远程资源，可完全离线运行。
+- 双输入适配：键盘（方向键/WASD）与触屏手势均可操作。
+- 本地存档：最高分用浏览器 localStorage 保存，无云端上传。
+
+## 部署平台
+- Cloudflare Pages：https://marvis-arcade.pages.dev/
+- GitHub Pages：https://vip-4.github.io/marvis-arcade/
