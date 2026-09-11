@@ -3,10 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Marvis Arcade · 轻量级静态游戏合集</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:opsz,wght@9..40,350;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="description" content="Marvis Arcade：12 款即点即玩的轻量级网页游戏合集，纯 HTML/CSS/JavaScript 单文件实现，零后端零依赖零追踪。收录贪吃蛇、俄罗斯方块、打砖块、2048、节奏打击、四向斩击、重力翻转、炮兵对决、塔防、多边形堆叠、Hextris、极简太空游戏，键盘与触屏皆可玩，支持最高分本地存档。">
+<meta name="keywords" content="Marvis Arcade, 在线小游戏, 网页小游戏, HTML5 游戏, 轻量级游戏, 开源游戏, 贪吃蛇, 俄罗斯方块, 打砖块, 2048, 塔防, 节奏游戏, 无需下载, 单文件游戏, browser game, html5 game, open source">
+<meta name="author" content="Marvis">
+<meta name="theme-color" content="#1a1712">
+<link rel="canonical" href="https://marvis-arcade.pages.dev/">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Marvis Arcade">
+<meta property="og:title" content="Marvis Arcade · 12 款即点即玩的轻量级网页游戏合集">
+<meta property="og:description" content="纯 HTML/CSS/JS 单文件小游戏合集：贪吃蛇、俄罗斯方块、打砖块、2048、节奏打击、四向斩击、重力翻转、炮兵对决、塔防、多边形堆叠、Hextris、极简太空。零后端零依赖，键盘+触屏双适配。">
+<meta property="og:url" content="https://marvis-arcade.pages.dev/">
+<meta property="og:locale" content="zh_CN">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Marvis Arcade · 12 款即点即玩小游戏">
+<meta name="twitter:description" content="零后端零依赖的单文件 HTML5 游戏合集，全部免安装直接玩。">
+<title>Marvis Arcade · 12 款即点即玩的轻量级网页游戏合集</title>
 <style>
   :root{
     --bg:oklch(16% .02 70);--bg-raised:oklch(20% .025 70);--surface:oklch(24% .028 70);--surface-hi:oklch(29% .03 70);
@@ -19,155 +33,221 @@
   body{background:var(--bg);color:var(--ink);font-family:var(--font-b);font-size:1rem;line-height:1.6;font-weight:350;min-height:100vh;-webkit-font-smoothing:antialiased}
   ::selection{background:oklch(78% .14 75/.35)}
   a{color:inherit;text-decoration:none}
-  .shell{width:100%;max-width:1080px;margin:0 auto;padding:clamp(24px,4vw,52px) clamp(20px,5vw,52px)}
+  .shell{width:100%;max-width:1120px;margin:0 auto;padding:clamp(24px,4vw,52px) clamp(20px,5vw,52px)}
   /* masthead */
-  .masthead{padding-bottom:clamp(28px,4vw,48px);border-bottom:1px solid var(--line);margin-bottom:clamp(32px,4vw,52px)}
+  .masthead{padding-bottom:clamp(28px,4vw,48px);border-bottom:1px solid var(--line);margin-bottom:clamp(28px,4vw,44px)}
   .kicker{display:inline-flex;align-items:center;gap:10px;font-family:var(--font-d);font-size:.72rem;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint)}
   .kicker::before{content:"";width:26px;height:2px;background:var(--ac)}
   .masthead h1{font-family:var(--font-d);font-weight:600;font-size:clamp(2rem,5.5vw,3.5rem);line-height:1.05;letter-spacing:-.02em;margin:16px 0 12px}
   .masthead h1 em{font-style:normal;color:var(--ink-faint)}
-  .lede{max-width:58ch;color:var(--ink-dim);font-size:clamp(.95rem,1.3vw,1.05rem)}
+  .lede{max-width:62ch;color:var(--ink-dim);font-size:clamp(.95rem,1.3vw,1.05rem)}
   .stats{display:flex;gap:28px;margin-top:22px;flex-wrap:wrap}
   .stat .n{font-family:var(--font-d);font-weight:600;font-size:1.6rem;color:var(--ac);font-variant-numeric:tabular-nums;display:block;line-height:1.1}
   .stat .l{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint)}
+  /* facts / GEO-friendly entity block */
+  .facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:26px 0 10px}
+  .fact{background:var(--bg-raised);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .fact dt{font-family:var(--font-d);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:4px}
+  .fact dd{font-size:.88rem;color:var(--ink-dim)}
+  .fact dd b{color:var(--ink);font-weight:600}
   /* section */
   .sec-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin:clamp(28px,4vw,44px) 0 18px}
   .sec-head h2{font-family:var(--font-d);font-weight:500;font-size:.95rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
   .sec-head .tag{font-size:.75rem;color:var(--ink-faint);font-family:var(--font-d)}
   /* playable grid */
-  .play-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+  .play-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
   .card{position:relative;background:var(--surface);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px;box-shadow:0 18px 40px -22px oklch(4% .06 70/ .9);transition:transform .35s var(--ease5),box-shadow .35s var(--ease5);overflow:hidden}
   .card::after{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--cv,var(--ac));opacity:.85}
   .card:hover{transform:translateY(-4px);box-shadow:0 26px 50px -22px oklch(4% .07 70/ .95)}
-  .card h3{font-family:var(--font-d);font-weight:600;font-size:1.2rem;letter-spacing:-.01em}
-  .card p{font-size:.86rem;color:var(--ink-dim);flex:1}
+  .card h3{font-family:var(--font-d);font-weight:600;font-size:1.15rem;letter-spacing:-.01em}
+  .card p{font-size:.85rem;color:var(--ink-dim);flex:1}
   .card .meta{display:flex;justify-content:space-between;align-items:center;font-size:.74rem;color:var(--ink-faint)}
   .pill{display:inline-block;font-family:var(--font-d);font-size:.66rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:var(--surface-hi);color:var(--ink-dim)}
   .pill.play{background:oklch(76% .12 155/.18);color:var(--mint)}
   .go{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-d);font-size:.78rem;font-weight:600;color:var(--ac)}
   .go svg{width:14px;height:14px;transition:transform .3s var(--ease)}
   .card:hover .go svg{transform:translateX(4px)}
-  /* roadmap */
-  .road{display:flex;flex-direction:column}
-  .row{display:grid;grid-template-columns:56px 1fr auto;gap:18px;padding:18px 4px;border-top:1px solid var(--line);align-items:start}
-  .row .no{font-family:var(--font-d);font-weight:700;font-size:1.3rem;color:var(--ink-faint);line-height:1}
-  .row h3{font-family:var(--font-d);font-weight:600;font-size:1.02rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  .row p{font-size:.86rem;color:var(--ink-dim);margin-top:4px;max-width:64ch}
-  .row .src{font-size:.7rem;font-family:var(--font-d);color:var(--ink-faint);white-space:nowrap;padding-top:4px}
-  .row .src b{color:var(--ac-deep);font-weight:600}
   /* footer */
   .foot{margin-top:52px;padding-top:22px;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;color:var(--ink-faint);font-size:.78rem}
   .foot b{font-family:var(--font-d);color:var(--ink-dim);font-weight:600}
-  @media(max-width:640px){.row{grid-template-columns:40px 1fr}.row .src{grid-column:2;white-space:normal;padding-top:2px}}
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  @media(max-width:640px){.facts{grid-template-columns:1fr 1fr}}
   @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "name": "Marvis Arcade",
+      "url": "https://marvis-arcade.pages.dev/",
+      "description": "12 款即点即玩的轻量级网页游戏合集，纯 HTML/CSS/JS 单文件实现，零后端零依赖。",
+      "inLanguage": "zh-CN",
+      "publisher": {"@type":"Organization","name":"Marvis"}
+    },
+    {
+      "@type": "CollectionPage",
+      "name": "Marvis Arcade 游戏合集",
+      "url": "https://marvis-arcade.pages.dev/",
+      "isPartOf": {"@type":"WebSite","name":"Marvis Arcade","url":"https://marvis-arcade.pages.dev/"},
+      "about": {
+        "@type": "VideoGame",
+        "name": "Marvis Arcade 合集内小游戏",
+        "genre": ["Puzzle","Arcade","Action","Strategy","Rhythm"],
+        "playMode": "SinglePlayer",
+        "applicationCategory": "Game",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires JavaScript",
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "CNY"}
+      },
+      "mainEntity": {
+        "@type": "ItemList",
+        "itemListElement": [
+          {"@type":"ListItem","position":1,"name":"贪吃蛇 Snake","url":"https://marvis-arcade.pages.dev/snake.html"},
+          {"@type":"ListItem","position":2,"name":"俄罗斯方块 Tetris","url":"https://marvis-arcade.pages.dev/tetris.html"},
+          {"@type":"ListItem","position":3,"name":"打砖块 Breakout","url":"https://marvis-arcade.pages.dev/breakout.html"},
+          {"@type":"ListItem","position":4,"name":"2048 数字合并","url":"https://marvis-arcade.pages.dev/2048.html"},
+          {"@type":"ListItem","position":5,"name":"节奏打击 Rhythm","url":"https://marvis-arcade.pages.dev/rhythm.html"},
+          {"@type":"ListItem","position":6,"name":"四向斩击 Open Saber","url":"https://marvis-arcade.pages.dev/saber.html"},
+          {"@type":"ListItem","position":7,"name":"重力翻转迷宫 ROTA","url":"https://marvis-arcade.pages.dev/rota.html"},
+          {"@type":"ListItem","position":8,"name":"炮兵对决 Artillery","url":"https://marvis-arcade.pages.dev/artillery.html"},
+          {"@type":"ListItem","position":9,"name":"精简塔防 YouTD-lite","url":"https://marvis-arcade.pages.dev/tower-defense.html"},
+          {"@type":"ListItem","position":10,"name":"多边形堆叠 Polygonfall","url":"https://marvis-arcade.pages.dev/polygons.html"},
+          {"@type":"ListItem","position":11,"name":"六边形拼块 Hextris","url":"https://marvis-arcade.pages.dev/hextris.html"},
+          {"@type":"ListItem","position":12,"name":"极简太空 Star Orbit","url":"https://marvis-arcade.pages.dev/js13k.html"}
+        ]
+      }
+    }
+  ]
+}
+</script>
 </head>
 <body>
 <main class="shell">
   <header class="masthead">
-    <div class="kicker">Static · No Backend · Tiny</div>
+    <div class="kicker">Static · No Backend · No Dependencies</div>
     <h1>Marvis Arcade<em>。</em></h1>
-    <p class="lede">纯 HTML / CSS / JavaScript 的轻量级静态游戏合集——零后端、零依赖、开箱即玩，适用于任何静态托管平台。</p>
+    <p class="lede">12 款即点即玩的轻量级网页游戏合集——每款都是纯 HTML / CSS / JavaScript 单文件实现，零后端、零依赖、零追踪。打开即玩，支持键盘与触屏，最高分自动保存在本地浏览器。</p>
     <div class="stats">
-      <div class="stat"><span class="n">4</span><span class="l">已部署 · 立即可玩</span></div>
-      <div class="stat"><span class="n">8</span><span class="l">规划路线图</span></div>
-      <div class="stat"><span class="n">~23KB</span><span class="l">单文件平均体积</span></div>
+      <div class="stat"><span class="n">12</span><span class="l">已上线 · 全部可玩</span></div>
+      <div class="stat"><span class="n">0</span><span class="l">后端 / 外部依赖</span></div>
+      <div class="stat"><span class="n">100%</span><span class="l">单文件 · 可离线</span></div>
     </div>
   </header>
 
-  <section>
+  <section aria-labelledby="about">
+    <h2 class="sr-only" id="about">关于 Marvis Arcade</h2>
+    <dl class="facts">
+      <div class="fact"><dt>技术栈</dt><dd><b>纯 HTML + CSS + JS</b>，无框架、无构建、无 CDN</dd></div>
+      <div class="fact"><dt>玩法</dt><dd>键盘（方向键 / WASD）与触屏手势双适配</dd></div>
+      <div class="fact"><dt>存档</dt><dd>最高分通过 localStorage 本地保存，无需账号</dd></div>
+      <div class="fact"><dt>部署</dt><dd>Cloudflare Pages 与 GitHub Pages 双平台，纯静态托管</dd></div>
+    </dl>
+  </section>
+
+  <section aria-labelledby="classic">
     <div class="sec-head">
-      <h2>已部署 Playables</h2>
-      <span class="tag">单文件 · 自包含</span>
+      <h2 id="classic">经典益智</h2>
+      <span class="tag">Classic</span>
     </div>
     <div class="play-grid">
-      <a class="card" href="games/snake.html" style="--cv:oklch(78% .12 155)">
+      <a class="card" href="snake.html" style="--cv:oklch(78% .12 155)">
         <h3>贪吃蛇 Snake</h3>
         <p>经典网格贪吃。WASD / 方向键 / 触屏滑动，吃豆增长、逐级加速，最高分本地存档。</p>
-        <div class="meta"><span class="pill play">休闲</span><span>≈4.5KB</span></div>
+        <div class="meta"><span class="pill play">休闲</span><span>键盘 + 触屏</span></div>
         <div class="go">立即开玩 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h11M9 3.5 13.5 8 9 12.5"/></svg></div>
       </a>
-      <a class="card" href="games/tetris.html" style="--cv:oklch(72% .17 290)">
+      <a class="card" href="tetris.html" style="--cv:oklch(72% .17 290)">
         <h3>俄罗斯方块 Tetris</h3>
         <p>完整下落逻辑：7-bag 随机、SRS 旋转踢墙、软硬降、消行计分、下一块预览。</p>
-        <div class="meta"><span class="pill play">益智</span><span>≈6.9KB</span></div>
+        <div class="meta"><span class="pill play">益智</span><span>键盘 + 触屏</span></div>
         <div class="go">立即开玩 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h11M9 3.5 13.5 8 9 12.5"/></svg></div>
       </a>
-      <a class="card" href="games/breakout.html" style="--cv:oklch(74% .16 60)">
+      <a class="card" href="breakout.html" style="--cv:oklch(74% .16 60)">
         <h3>打砖块 Breakout</h3>
         <p>弹球物理：AABB 碰撞反弹、挡板角度控制、多血量砖块、逐关加速与生命制。</p>
-        <div class="meta"><span class="pill play">休闲动作</span><span>≈5.8KB</span></div>
+        <div class="meta"><span class="pill play">休闲动作</span><span>键盘 + 触屏</span></div>
         <div class="go">立即开玩 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h11M9 3.5 13.5 8 9 12.5"/></svg></div>
       </a>
-      <a class="card" href="games/2048.html" style="--cv:oklch(78% .15 80)">
+      <a class="card" href="2048.html" style="--cv:oklch(78% .15 80)">
         <h3>2048 数字合并</h3>
         <p>滑动合并经典益智：方向键 / WASD / 触屏手势，合并动画、得分与最高分持久化。</p>
-        <div class="meta"><span class="pill play">益智</span><span>≈6.2KB</span></div>
+        <div class="meta"><span class="pill play">益智</span><span>键盘 + 触屏</span></div>
         <div class="go">立即开玩 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h11M9 3.5 13.5 8 9 12.5"/></svg></div>
       </a>
     </div>
   </section>
 
-  <section>
+  <section aria-labelledby="action">
     <div class="sec-head">
-      <h2>下一步 · 规划路线图</h2>
-      <span class="tag">来源已验证 · 纯 JS 可实现</span>
+      <h2 id="action">节奏与动作</h2>
+      <span class="tag">Rhythm &amp; Action</span>
     </div>
-    <div class="road">
-      <div class="row">
-        <div class="no">05</div>
-        <div><h3>节奏游戏（FNF 风格）<span class="pill">节奏</span><span class="pill">itch.io</span></h3>
-          <p>音符下落 + 判定窗口的节奏玩法。技术要点：WebAudio 精确节拍同步、判定线/Perfect/Good/Miss 窗口、charter 谱面 JSON、输入延迟补偿。</p></div>
-        <div class="src">来源 <b>itch · open-source</b></div>
-      </div>
-      <div class="row">
-        <div class="no">06</div>
-        <div><h3>Open Saber 简化版 <span class="pill">节奏动作</span><span class="pill">itch.io</span></h3>
-          <p>按方向挥砍下落块。技术要点：块的角度-方向匹配判定、3D 场景降级为 2D 投影、Pointer Events 轨迹采集、连击系统。</p></div>
-        <div class="src">来源 <b>itch · open-source</b></div>
-      </div>
-      <div class="row">
-        <div class="no">07</div>
-        <div><h3>ROTA 类重力翻转解谜 <span class="pill">益智平台</span><span class="pill">itch.io</span></h3>
-          <p>通过翻转重力引导方块。技术要点：重力方向状态机、角色-地面碰撞翻转判定、关卡数据表驱动、撤销/重做。</p></div>
-        <div class="src">来源 <b>itch · open-source</b></div>
-      </div>
-      <div class="row">
-        <div class="no">08</div>
-        <div><h3>炮兵对决 Artillery <span class="pill">策略</span><span class="pill">Ludum Dare</span></h3>
-          <p>风阻弹道互轰。技术要点：抛物线/带水平风的弹道积分、地形破坏（位图掩码）、瞄准 UI、本机双人轮流。</p></div>
-        <div class="src">来源 <b>LD · jam 作品</b></div>
-      </div>
-      <div class="row">
-        <div class="no">09</div>
-        <div><h3>精简塔防 YouTD2-lite <span class="pill">策略塔防</span><span class="pill">GitHub</span></h3>
-          <p>波次防守 + 路径规划。技术要点：BFS 寻路 / 路线预计算、塔的攻击范围与优先目标、敌人波次 JSON 脚本、升级/出售。</p></div>
-        <div class="src">来源 <b>itch · open-source</b></div>
-      </div>
-      <div class="row">
-        <div class="no">10</div>
-        <div><h3>Parable of the Polygons <span class="pill">模拟教育</span><span class="pill">GitHub</span></h3>
-          <p>社区隔离的涌现模拟。技术要点：网格代理模型、满意/移动规则每步迭代、SVG 批渲染 + 量化统计图表。</p></div>
-        <div class="src">来源 <b>GitHub · ncase</b></div>
-      </div>
-      <div class="row">
-        <div class="no">11</div>
-        <div><h3>Hextris <span class="pill">益智节奏</span><span class="pill">GitHub</span></h3>
-          <p>围绕六边形旋转的拼块下落。技术要点：六边形网格坐标换算、块旋转吸附与碰撞、节奏化下落间隔。</p></div>
-        <div class="src">来源 <b>GitHub · Trending 常客</b></div>
-      </div>
-      <div class="row">
-        <div class="no">12</div>
-        <div><h3>js13k 代表佳作 <span class="pill">混合</span><span class="pill">GitHub</span></h3>
-          <p>13KB 上限的极限挑战作品。技术要点：单文件约束下的代码压缩/纹理生成、极简游戏循环、gzip 后体积优化。</p></div>
-        <div class="src">来源 <b>GitHub · js13kGames</b></div>
-      </div>
+    <div class="play-grid">
+      <a class="card" href="rhythm.html" style="--cv:oklch(76% .14 290)">
+        <h3>节奏打击 Rhythm</h3>
+        <p>四键音符下落：Perfect / Good 判定、连击加分、生命制，WebAudio 合成节拍音效。</p>
+        <div class="meta"><span class="pill play">节奏</span><span>键盘 + 触屏</span></div>
+        <div class="go">立即开玩 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h11M9 3.5 13.5 8 9 12.5"/></svg></div>
+      </a>
+      <a class="card" href="saber.html" style="--cv:oklch(74% .13 250)">
+        <h3>四向斩击 Open Saber</h3>
+        <p>类 Open Saber 的即时斩击：方块从四方袭来，沿同方向劈砍得分，连击与生命制。</p>
+        <div class="meta"><span class="pill play">节奏动作</span><span>键盘 + 触屏</span></div>
+        <div class="go">立即开玩 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h11M9 3.5 13.5 8 9 12.5"/></svg></div>
+      </a>
+      <a class="card" href="js13k.html" style="--cv:oklch(76% .13 150)">
+        <h3>极简太空 Star Orbit</h3>
+        <p>js13k 精神的极简飞行：收集星尘赚能量、躲避彗星，60 秒倒计时，全程 canvas 绘制。</p>
+        <div class="meta"><span class="pill play">迷你</span><span>鼠标 / 键盘 / 触屏</span></div>
+        <div class="go">立即开玩 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h11M9 3.5 13.5 8 9 12.5"/></svg></div>
+      </a>
+    </div>
+  </section>
+
+  <section aria-labelledby="puzzle">
+    <div class="sec-head">
+      <h2 id="puzzle">解谜与策略</h2>
+      <span class="tag">Puzzle &amp; Strategy</span>
+    </div>
+    <div class="play-grid">
+      <a class="card" href="rota.html" style="--cv:oklch(74% .16 350)">
+        <h3>重力翻转迷宫 ROTA</h3>
+        <p>类 ROTA 益智：旋转重力方向引导小球滚到出口，随机关卡逐步变难，通关数记分。</p>
+        <div class="meta"><span class="pill play">益智</span><span>键盘 + 触屏</span></div>
+        <div class="go">立即开玩 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h11M9 3.5 13.5 8 9 12.5"/></svg></div>
+      </a>
+      <a class="card" href="polygons.html" style="--cv:oklch(76% .12 130)">
+        <h3>多边形堆叠 Polygonfall</h3>
+        <p>多边形拼块下落堆叠：三角形、菱形、六边形块旋转堆叠，整行填满即消，等级递进。</p>
+        <div class="meta"><span class="pill play">益智</span><span>键盘 + 触屏</span></div>
+        <div class="go">立即开玩 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h11M9 3.5 13.5 8 9 12.5"/></svg></div>
+      </a>
+      <a class="card" href="hextris.html" style="--cv:oklch(72% .16 270)">
+        <h3>六边形拼块 Hextris</h3>
+        <p>围绕六边形堆叠的蜂窝拼块：旋转拼块、六角格成环消除，逐步加速提级。</p>
+        <div class="meta"><span class="pill play">益智节奏</span><span>键盘 + 触屏</span></div>
+        <div class="go">立即开玩 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h11M9 3.5 13.5 8 9 12.5"/></svg></div>
+      </a>
+      <a class="card" href="artillery.html" style="--cv:oklch(74% .16 60)">
+        <h3>炮兵对决 Artillery</h3>
+        <p>抛物线弹道：调整角度与力度命中目标，风向影响弹道，命中刷新目标并计分。</p>
+        <div class="meta"><span class="pill play">策略</span><span>滑块 + 键盘</span></div>
+        <div class="go">立即开玩 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h11M9 3.5 13.5 8 9 12.5"/></svg></div>
+      </a>
+      <a class="card" href="tower-defense.html" style="--cv:oklch(72% .16 220)">
+        <h3>精简塔防 YouTD-lite</h3>
+        <p>沿路径建造箭塔 / 炮塔 / 缓速塔自动迎击波次敌人，金币经济、击败加分、波次制。</p>
+        <div class="meta"><span class="pill play">策略塔防</span><span>鼠标 / 触屏</span></div>
+        <div class="go">立即开玩 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 8h11M9 3.5 13.5 8 9 12.5"/></svg></div>
+      </a>
     </div>
   </section>
 
   <footer class="foot">
-    <div class="sig"><b>Marvis Arcade</b>&nbsp;·&nbsp;纯静态部署</div>
-    <span>建议引擎：Phaser 3 / Kaboom.js / PixiJS · 音频：Howler.js</span>
+    <div class="sig"><b>Marvis Arcade</b>&nbsp;·&nbsp;纯静态部署 · 开源可自托管</div>
+    <span>12 款单文件游戏 · 全部免安装即玩 · 支持本地最高分存档</span>
   </footer>
 </main>
 </body>
