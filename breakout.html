@@ -15,6 +15,13 @@
   .hint{color:var(--dim);font-size:.78rem}
   kbd{background:oklch(28% .02 40);padding:2px 7px;border-radius:5px;font-size:.72rem}
 </style>
+<meta name="description" content="经典打砖块：弹球 AABB 碰撞反弹、挡板角度控制、多血量砖块、逐关加速与生命制。纯单文件 HTML5 休闲动作游戏。">
+<link rel="canonical" href="https://marvis-arcade.pages.dev/breakout.html">
+<meta property="og:title" content="Breakout 打砖块 - Marvis Arcade">
+<meta property="og:description" content="经典打砖块，即点即玩。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://marvis-arcade.pages.dev/breakout.html">
+<meta name="theme-color" content="#1c1712">
 </head>
 <body>
 <h1>Breakout · 打砖块</h1>
@@ -119,6 +126,9 @@
   function loop(){step();draw();requestAnimationFrame(loop);}
   reset();loop();
 })();
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Breakout 打砖块","description":"经典打砖块休闲动作游戏","genre":"Arcade","playMode":"SinglePlayer","url":"https://marvis-arcade.pages.dev/breakout.html","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"}}
 </script>
 </body>
 </html>
