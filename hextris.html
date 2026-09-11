@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hextris · 六边形拼块 - Marvis Arcade</title>
+<meta name="description" content="围绕六边形堆叠的蜂窝拼块：旋转重力方向、六角格填满消除。纯单文件 HTML5 益智节奏游戏，键盘与触屏皆可。">
+<link rel="canonical" href="https://marvis-arcade.pages.dev/hextris.html">
+<meta property="og:title" content="Hextris · 六边形拼块 - Marvis Arcade">
+<meta property="og:description" content="六边形蜂窝拼块下落堆叠消除益智游戏。">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#14161e">
+<style>
+  :root{--bg:oklch(15% .02 260);--fg:oklch(90% .02 260);--ac:oklch(74% .15 290);--dim:oklch(60% .03 260);--good:oklch(76% .12 150)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:"Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+  a.back{position:fixed;top:14px;left:16px;font-size:.78rem;color:var(--dim);text-decoration:none;letter-spacing:.05em}
+  a.back:hover{color:var(--ac)}
+  h1{font-size:1.05rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+  #hud{display:flex;gap:22px;font-variant-numeric:tabular-nums;font-size:.9rem}
+  #hud b{color:var(--ac)}
+  canvas{background:oklch(19% .03 260);border-radius:12px;box-shadow:0 20px 50px -20px oklch(6% .05 260);touch-action:none;max-width:94vw}
+  #keys{display:flex;gap:10px;margin-top:2px}
+  .k{width:76px;height:50px;border:0;border-radius:10px;background:oklch(27% .03 260);color:var(--fg);font-size:1rem;font-weight:600;cursor:pointer}
+  .k:active{background:var(--ac);color:oklch(15% .05 260)}
+  .hint{color:var(--dim);font-size:.76rem;line-height:1.7;text-align:center}
+  kbd{background:oklch(27% .03 260);padding:2px 7px;border-radius:5px;font-size:.72rem}
+  #msg{position:fixed;inset:0;display:none;place-items:center;background:oklch(10% .02 260 / .72);color:var(--fg);font-size:1.3rem;text-align:center;flex-direction:column;gap:16px;z-index:20}
+  #msg.show{display:flex}
+  #msg button{padding:12px 30px;border:0;border-radius:10px;background:var(--ac);color:oklch(15% .05 260);font-weight:700;cursor:pointer;font-size:1rem}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← Marvis Arcade</a>
+<h1>Hextris · 六边形拼块</h1>
+<div id="hud"><span>得分 <b id="score">0</b></span><span>消环 <b id="rings">0</b></span><span>等级 <b id="lvl">1</b></span><span>最高 <b id="best">0</b></span></div>
+<canvas id="cv" width="420" height="380"></canvas>
+<div id="keys"><button class="k" id="rotL">⟲</button><button class="k" id="rotR">⟳</button></div>
+<div class="hint"><kbd>Q/E</kbd> 或 <kbd>←→</kbd> 或按钮：旋转六边形拼块 · 拼块落地后 3 个同色连成环即消</div>
+<div id="msg">GAME OVER<div id="final"></div><button onclick="restart()">再来一局</button></div>
+<script>
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+  var scoreEl=document.getElementById('score'),ringsEl=document.getElementById('rings'),
+      lvlEl=document.getElementById('lvl'),bestEl=document.getElementById('best'),
+      msgEl=document.getElementById('msg'),finalEl=document.getElementById('final');
+  var best=+localStorage.getItem('hextris.best')||0;bestEl.textContent=best;
+  // axial hex grid radius R (rings of hexes around center)
+  var R=5, CELL=26, cx=210, cy=196;
+  var grid={},placed=[],pieces=[];
+  var score=0,ringsCleared=0,level=1,over=false,id=null;
+  var COLORS=['oklch(76% .14 75)','oklch(76% .14 150)','oklch(72% .16 260)','oklch(74% .16 350)','oklch(76% .13 290)','oklch(76% .13 60)'];
+  function hexCtr(q,r){var x=cx+CELL*1.5*q,y=cy+CELL*Math.sqrt(3)*(r+q/2);return [x,y];}
+  function inRing(q,r){return Math.max(Math.abs(q),Math.abs(r),Math.abs(-q-r))<=R&&!(q===0&&r===0&&falseExposed());}
+  function inGrid(q,r){return Math.max(Math.abs(q),Math.abs(r),Math.abs(-q-r))<=R;}
+  function falseExposed(){return false;}
+  function keyOf(q,r){return q+','+r;}
+  function occupied(q,r){return grid[keyOf(q,r)]===1;}
+  // piece: anchor q,r + 3-4 hexes offsets
+  var PIECES=[
+    [[0,0],[1,0],[0,1]],         // triangle
+    [[0,0],[1,0],[1,-1]],        // triangle other
+    [[0,0],[1,0],[0,1],[-1,1]],  // diamond 4
+    [[0,0],[1,0],[2,0]],         // line 3
+    [[0,0],[0,1],[0,2]],         // line vert
+    [[0,0],[1,0],[1,-1],[0,-1]], // flake 4
+    [[0,0],[1,0],[0,1],[1,1]]    // quad hex
+  ];
+  function rotateHex(offsets){
+    // rotate 60deg in axial coords: (q,r)->(q+r, -q)
+    return offsets.map(function(o){return [o[0]+o[1], -o[0], o[2]];}).map(function(o){return [o[0],o[1]];});
+  }
+  function randPiece(){
+    var p=PIECES[(Math.random()*PIECES.length)|0].map(function(c){return c.slice();});
+    // rotate random times, offset to random ring
+    for(var i=0;i<(Math.random()*6)|0;i++)p=rotateHex(p);
+    var q=(Math.random()<.5?-1:1)*(1+(Math.random()*2)|0);
+    var r=(Math.random()<.5?-1:1)*(1+(Math.random()*2)|0);
+    var ci=(Math.random()*COLORS.length)|0;
+    var pc={off:p,q:q,r:r,ci:ci};
+    if(collide(pc))return null;
+    return pc;
+  }
+  function pieceCells(p){return p.off.map(function(o){return [p.q+o[0],p.r+o[1]];});}
+  function collide(p){return pieceCells(p).some(function(c){if(!inGrid(c[0],c[1]))return true;if(occupied(c[0],c[1]))return true;return false;});}
+  function hexDist(q1,r1,q2,r2){var dq=Math.abs(q1-q2),dr=Math.abs(r1-r2),ds=Math.abs(q1+r1-q2-r2);return Math.max(dq,dr,ds);}
+  function shrinkCells(cells){
+    return cells.map(function(c){
+      var q=c[0],r=c[1];
+      var A=Math.abs(q),B=Math.abs(r),C=Math.abs(q+r),M=Math.max(A,B,C);
+      if(M===0)return [q,r];          // already at center
+      if(A===M)q+= q>0?-1:1;
+      else if(B===M)r+= r>0?-1:1;
+      else {q+= q>0?-1:1; r+= r>0?-1:1;}
+      return [q,r];
+    });
+  }
+  function drop(p){
+    // gently fall piece toward center, one ring-step per iteration, until blocked
+    var cur={off:p.off.slice(),q:p.q,r:p.r,ci:p.ci};
+    for(var it=0;it<40;it++){
+      var cells=pieceCells(cur);
+      var next=shrinkCells(cells[0]&&cells);
+      if(!next)break;
+      var q0=next[0][0],r0=next[0][1];
+      var cand={off:next.map(function(c){return [c[0]-q0,c[1]-r0];}),q:q0,r:r0,ci:cur.ci};
+      if(collide(cand))break;
+      cur=cand;
+    }
+    return cur;
+  }
+  function place(p){
+    var final=drop(p);
+    pieceCells(final).forEach(function(c){grid[keyOf(c[0],c[1])]=1;});
+    placed.push(final);
+    // clear complete rings: any ring r=1..R whose all cells occupied -> clear & score
+    var cleared=0;
+    for(var ring=1;ring<=R;ring++){
+      var cells=ringCells(ring),full=cells.every(function(c){return occupied(c[0],c[1]);});
+      if(full){
+        cells.forEach(function(c){grid[keyOf(c[0],c[1])]=0;});
+        cleared++;
+      }
+    }
+    if(cleared){ringsCleared+=cleared;ringsEl.textContent=ringsCleared;score+=cleared*200*level;scoreEl.textContent=score;if(score>best){best=score;localStorage.setItem('hextris.best',best);}bestEl.textContent=best;level++;lvlEl.textContent=level;}
+    // game over if center blocked or any piece cell blocked at placement start
+    if(occupied(0,0))end();
+  }
+  function ringCells(ring){
+    var out=[];
+    // traverse hex ring at distance ring
+    var q=-ring,r=ring;
+    var dirs=[[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+    for(var d=0;d<6;d++){
+      for(var s=0;s<ring;s++){out.push([q,r]);q+=dirs[d][0];r+=dirs[d][1];}
+    }
+    return out;
+  }
+  function draw(){
+    ctx.fillStyle='oklch(19% .03 260)';ctx.fillRect(0,0,cv.width,cv.height);
+    // draw all hex cells in grid
+    for(var q=-R;q<=R;q++)for(var r=-R;r<=R;r++){
+      if(!inGrid(q,r))continue;
+      var c=hexCtr(q,r);
+      if(c[0]<0||c[0]>cv.width||c[1]<0||c[1]>cv.height)continue;
+      if(occupied(q,r)){hex(c[0],c[1],grid[keyOf(q,r)]-0?COLORS[(grid[keyOf(q,r)]-1)%COLORS.length]:'oklch(78% .14 60)');}
+      else hex(c[0],c[1],'oklch(26% .03 260)',true);
+      if(q===0&&r===0)hex(c[0],c[1],'oklch(44% .06 260)',true);
+    }
+    // piece
+    pieces.forEach(function(p){pieceCells(p).forEach(function(c){if(inGrid(c[0],c[1])){var h=hexCtr(c[0],c[1]);hex(h[0],h[1],COLORS[p.ci%COLORS.length]);}});});
+    function hex(x,y,fill,ghost){ctx.fillStyle=fill;ctx.strokeStyle='oklch(44% .05 260)';ctx.lineWidth=1;ctx.beginPath();for(var i=0;i<6;i++){var a=i/6*Math.PI*2+Math.PI/6;var px=x+Math.cos(a)*(CELL-3),py=y+Math.sin(a)*(CELL-3);i?ctx.lineTo(px,py):ctx.moveTo(px,py);}ctx.closePath();ctx.fill();ctx.stroke();}
+  }
+  function end(){over=true;clearInterval(id);finalEl.textContent='得分 '+score+' · 消环 '+ringsCleared+' · 最高 '+best;msgEl.classList.add('show');}
+  function restart(){
+    grid={};placed=[];pieces=[];score=0;ringsCleared=0;level=1;over=false;
+    scoreEl.textContent=0;ringsEl.textContent=0;lvlEl.textContent=1;msgEl.classList.remove('show');
+    tick();
+    clearInterval(id);id=setInterval(tick,900);
+  }
+  function tick(){
+    if(over)return;
+    if(pieces.length===0){
+      var p=randPiece();
+      if(!p){end();return;}
+      pieces=[p];
+    }else{
+      var cur=pieces[0];pieces=[];
+      place(cur);
+      if(occupied(0,0)&&!over)end();
+    }
+    draw();
+  }
+  function rotatePiece(){
+    if(over)return;
+    if(pieces.length===0)return;
+    var p=pieces[0];
+    var q=p.q,r=p.r;
+    // rotate offsets around anchor? instead rotate the whole piece including anchor position rotated 60deg in ring
+    var nr=-r,nq=q+r; // rotate anchor... simpler: rotate offsets
+    var noff=rotateHex(p.off);
+    var cand={off:noff,q:p.q,r:p.r,ci:p.ci};
+    if(!collide(cand)){pieces=[cand];draw();}
+    else{for(var i=0;i<7;i++){cand.q=p.q+ (i<3?-1:i<6?1:0); if(i%4===0){cand={off:noff,q:cand.q,r:p.r,ci:p.ci};} if(!collide(cand)){pieces=[cand];break;}}}
+    draw();
+  }
+  function moveDown(){if(pieces.length&&!over){place(pieces[0]);pieces=[];tick();}}
+  addEventListener('keydown',function(e){
+    var k=e.key;
+    if(k==='q'||k==='Q'||k==='ArrowLeft'){rotatePiece();e.preventDefault();}
+    if(k==='e'||k==='E'||k==='ArrowRight'){rotatePiece();e.preventDefault();}
+    if(k==='r')restart();
+  });
+  document.getElementById('rotL').addEventListener('click',rotatePiece);
+  document.getElementById('rotR').addEventListener('click',rotatePiece);
+  restart();
+})();
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Hextris 六边形拼块","description":"六边形蜂窝拼块旋转下落消除的益智游戏","genre":"Puzzle","playMode":"SinglePlayer","url":"https://marvis-arcade.pages.dev/hextris.html","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"}}
+</script>
+</body>
+</html>
