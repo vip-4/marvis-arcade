@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROTA · 重力翻转迷宫 - Marvis Arcade</title>
+<meta name="description" content="类 ROTA 的重力翻转益智游戏：旋转重力引导小球滚到出口，随机关卡逐步变难。纯单文件 HTML5 益智，键盘与触屏皆可。">
+<link rel="canonical" href="https://marvis-arcade.pages.dev/rota.html">
+<meta property="og:title" content="ROTA · 重力翻转迷宫 - Marvis Arcade">
+<meta property="og:description" content="旋转重力方向引导小球滚出迷宫的益智小游戏。">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#1a1418">
+<style>
+  :root{--bg:oklch(16% .02 330);--fg:oklch(90% .02 330);--ac:oklch(76% .15 350);--dim:oklch(60% .03 330);--green:oklch(76% .12 150)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:"Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+  a.back{position:fixed;top:14px;left:16px;font-size:.78rem;color:var(--dim);text-decoration:none;letter-spacing:.05em}
+  a.back:hover{color:var(--ac)}
+  h1{font-size:1.05rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+  #hud{display:flex;gap:22px;font-variant-numeric:tabular-nums;font-size:.9rem}
+  #hud b{color:var(--ac)}
+  canvas{background:oklch(22% .03 330);border-radius:12px;box-shadow:0 20px 50px -20px oklch(6% .05 330);touch-action:none;max-width:96vw}
+  #dir{font-family:"Segoe UI",system-ui;font-size:.85rem;color:var(--dim);letter-spacing:.05em}
+  #dir b{color:var(--green)}
+  #keys{display:flex;gap:10px}
+  .k{width:70px;height:52px;border:0;border-radius:10px;background:oklch(28% .03 330);color:var(--fg);font-size:1rem;font-weight:600;cursor:pointer}
+  .k:active{background:var(--ac);color:oklch(15% .05 330)}
+  .hint{color:var(--dim);font-size:.76rem;line-height:1.7}
+  kbd{background:oklch(28% .02 330);padding:2px 7px;border-radius:5px;font-size:.72rem}
+  #msg{position:fixed;inset:0;display:none;place-items:center;background:oklch(10% .02 330 / .72);color:var(--fg);font-size:1.3rem;text-align:center;cursor:pointer;flex-direction:column;gap:16px}
+  #msg.show{display:flex}
+  #msg button{padding:12px 30px;border:0;border-radius:10px;background:var(--ac);color:oklch(15% .05 330);font-weight:700;cursor:pointer;font-size:1rem}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← Marvis Arcade</a>
+<h1>ROTA · 重力翻转迷宫</h1>
+<div id="hud"><span>关卡 <b id="lvl">1</b></span><span>重力 <b id="dir">▼</b></span><span>步数 <b id="steps">0</b></span><span>历史最高 <b id="best">0</b></span></div>
+<canvas id="cv" width="360" height="300"></canvas>
+<div id="keys">
+  <button class="k" id="rotL">⟲ 左转</button><button class="k" id="rotR">右转 ⟳</button>
+</div>
+<div class="hint">小球沿重力方向滚到尽头，用 <kbd>Q</kbd>/<kbd>E</kbd> 或按钮旋转重力，让球滚到 ★ 出口；避开黑色洞</div>
+<div id="msg">过关/失败<div id="final"></div><button onclick="restart()">再来一局</button></div>
+<script>
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+  var lvlEl=document.getElementById('lvl'),dirEl=document.getElementById('dir'),
+      stepsEl=document.getElementById('steps'),bestEl=document.getElementById('best'),
+      msgEl=document.getElementById('msg'),finalEl=document.getElementById('final');
+  var best=+localStorage.getItem('rota.best')||0;bestEl.textContent=best;
+  var COLS=9,ROWS=7,CELL=40;
+  var grid,ball,goal,dir,level=1,steps=over=false;
+  var dirs=[[0,1],[1,0],[0,-1],[-1,0]],dn=0; // down,right,up,left
+  var darrow=['▼','▶','▲','◀'];
+  function makeLevel(){
+    grid=[];over=false;
+    for(var y=0;y<ROWS;y++){var row=[];for(var x=0;x<COLS;x++)row.push(0);grid.push(row);}
+    // obstacles & holes, random with density by level
+    var d=Math.min(.35+level*.015,.52);
+    for(var y=0;y<ROWS;y++)for(var x=0;x<COLS;x++){
+      if(x===0&&y===0)continue;
+      if(Math.random()<d)grid[y][x]=Math.random()<.55?1:(Math.random()<.35?9:0); // 1=wall,9=hole
+    }
+    // ensure start cell clear
+    grid[0][0]=0;
+    ball={x:0,y:0};
+    // goal: random free cell not at start
+    var tries=0;
+    do{goal={x:(Math.random()*COLS)|0,y:(Math.random()*ROWS)|0};tries++;}while((goal.x===0&&goal.y===0)||grid[goal.y][goal.x]===1||grid[goal.y][goal.x]===9||tries<8&&Math.random()<.2&&goal.y<ROWS-1);
+    if(grid[goal.y][goal.x]===9){grid[goal.y][goal.x]=0;}
+    dn=0;steps=0;lvlEl.textContent=level;stepsEl.textContent=0;updateDir();
+    roll();
+  }
+  function updateDir(){dirEl.textContent=darrow[dn];dirEl.style.color=dn%2?'var(--ac)':'var(--fg)';}
+  function roll(){
+    // roll ball in current direction until blocked
+    var d=dirs[dn],moved=true,guard=0;
+    while(moved&&guard++<COLS*ROWS){
+      moved=false;
+      var nx=ball.x+d[0],ny=ball.y+d[1];
+      if(nx<0||ny<0||nx>=COLS||ny>=ROWS){break;}
+      if(grid[ny][nx]===1)break;
+      ball.x=nx;ball.y=ny;moved=true;
+    }
+    check();
+  }
+  function rotate(step){
+    if(over)return;
+    dn=(dn+step+4)%4;steps++;stepsEl.textContent=steps;updateDir();
+    roll();
+  }
+  function check(){
+    if(ball.x===goal.x&&ball.y===goal.y){
+      if(level>best){best=level;localStorage.setItem('rota.best',best);}
+      bestEl.textContent=best;
+      finalEl.textContent='🎉 过关！已闯 '+level+' 关 · 历史最高 '+best;
+      msgEl.classList.add('show');level++;over=true;
+      return;
+    }
+    if(grid[ball.y][ball.x]===9){ // fell into hole
+      finalEl.textContent='掉进洞了… 本关步数 '+steps;
+      msgEl.classList.add('show');over=true;return;
+    }
+  }
+  function draw(){
+    ctx.fillStyle='oklch(22% .03 330)';ctx.fillRect(0,0,cv.width,cv.height);
+    for(var y=0;y<ROWS;y++)for(var x=0;x<COLS;x++){
+      var g=grid[y][x];
+      if(g===1){ctx.fillStyle='oklch(31% .04 330)';ctx.fillRect(x*CELL,y*CELL,CELL,CELL);
+        ctx.fillStyle='oklch(26% .04 330)';ctx.fillRect(x*CELL,y*CELL,CELL,2);ctx.fillRect(x*CELL,y*CELL,2,CELL);
+      }else if(g===9){ctx.fillStyle='oklch(12% .05 330)';ctx.beginPath();ctx.arc(x*CELL+CELL/2,y*CELL+CELL/2,12,0,7);ctx.fill();}
+      ctx.strokeStyle='oklch(28% .03 330)';ctx.strokeRect(x*CELL+.5,y*CELL+.5,CELL,CELL);
+    }
+    // goal
+    ctx.fillStyle='var(--green)';ctx.font='20px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('★',goal.x*CELL+CELL/2,goal.y*CELL+CELL/2+1);
+    // ball
+    var b=ball;
+    ctx.fillStyle='var(--ac)';
+    ctx.beginPath();ctx.arc(b.x*CELL+CELL/2,b.y*CELL+CELL/2,13,0,7);ctx.fill();
+    ctx.fillStyle='oklch(96% .03 60)';
+    ctx.beginPath();ctx.arc(b.x*CELL+CELL/2-4,b.y*CELL+CELL/2-4,4,0,7);ctx.fill();
+  }
+  function restart(){
+    if(over&&ball.x===goal.x&&ball.y===goal.y){level++;} // advancing (recovered from msg)
+    msgEl.classList.remove('show');
+    makeLevel();
+    // schedule draw via rAF/interval below
+  }
+  addEventListener('keydown',function(e){
+    var k=e.key;
+    if(k==='q'||k==='Q'||k==='ArrowLeft'){rotate(-1);e.preventDefault();}
+    if(k==='e'||k==='E'||k==='ArrowRight'){rotate(1);e.preventDefault();}
+    if((k===' '||k==='r'||k==='Enter')&&over){restart();}
+  });
+  document.getElementById('rotL').addEventListener('click',function(){rotate(-1);});
+  document.getElementById('rotR').addEventListener('click',function(){rotate(1);});
+  msgEl.addEventListener('click',function(){if(over)restart();});
+  setInterval(draw,40);
+  makeLevel();
+})();
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"ROTA 重力翻转迷宫","description":"旋转重力引导小球滚到出口的益智游戏","genre":"Puzzle","playMode":"SinglePlayer","url":"https://marvis-arcade.pages.dev/rota.html","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"}}
+</script>
+</body>
+</html>
