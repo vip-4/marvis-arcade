@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rhythm · 节奏打击 - Marvis Arcade</title>
+<meta name="description" content="四键音符下落的节奏打击游戏：Perfect/Good 判定、连击加分、生命制。纯 HTML/CSS/JS 单文件，无后端零依赖，支持键盘与触屏。">
+<link rel="canonical" href="https://marvis-arcade.pages.dev/rhythm.html">
+<meta property="og:title" content="Rhythm · 节奏打击 - Marvis Arcade">
+<meta property="og:description" content="四键音符下落的节奏打击：Perfect/Good 判定、连击加分、生命制。">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#1a1712">
+<style>
+  :root{--bg:oklch(16% .02 70);--fg:oklch(90% .02 70);--ac:oklch(78% .15 75);--dim:oklch(60% .03 70);--good:oklch(76% .12 155);--bad:oklch(70% .16 30)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:"Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+  a.back{position:fixed;top:14px;left:16px;font-size:.78rem;color:var(--dim);text-decoration:none;letter-spacing:.05em}
+  a.back:hover{color:var(--ac)}
+  h1{font-size:1.05rem;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+  #hud{display:flex;gap:22px;font-variant-numeric:tabular-nums;font-size:.9rem}
+  #hud b{color:var(--ac)}
+  #stage{position:relative;width:300px;height:260px;background:oklch(22% .025 70);border-radius:12px;overflow:hidden;box-shadow:0 20px 50px -20px oklch(6% .05 70);touch-action:none}
+  .lane{position:absolute;top:0;bottom:0;width:25%;background:oklch(24% .02 70);border-right:2px solid oklch(30% .03 70)}
+  .lane:nth-child(1){left:0}.lane:nth-child(2){left:25%}.lane:nth-child(3){left:50%}.lane:nth-child(4){left:75%;border-right:0}
+  #judge{position:absolute;top:214px;left:0;right:0;height:3px;background:oklch(78% .15 75)}
+  #judge::after{content:"";position:absolute;left:-8px;top:-4px;width:0;height:0;border-top:6px solid transparent;border-bottom:6px solid transparent;border-left:8px solid var(--ac)}
+  .note{position:absolute;width:25%;height:12px;border-radius:3px;transition:none}
+  #hit{position:absolute;top:0;left:0;right:0;height:220px}
+  #fx{position:absolute;top:196px;left:50%;transform:translate(-50%,-50%);font-size:1.3rem;font-weight:800;letter-spacing:.04em;opacity:0;transition:opacity .18s,transform .18s;pointer-events:none}
+  #fx.show{opacity:1;transform:translate(-50%,-150%)}
+  #fx.perfect{color:var(--good)}#fx.good{color:var(--ac)}#fx.miss{color:var(--bad)}
+  #keys{display:flex;gap:10px;margin-top:4px}
+  .k{width:62px;height:50px;border:0;border-radius:10px;background:oklch(28% .03 70);color:var(--fg);font-size:1rem;font-weight:600;cursor:pointer;touch-action:manipulation}
+  .k:active{background:var(--ac);color:oklch(16% .05 70)}
+  .hint{color:var(--dim);font-size:.76rem;text-align:center;line-height:1.7}
+  kbd{background:oklch(28% .02 70);padding:2px 7px;border-radius:5px;font-size:.72rem}
+  #msg{position:fixed;inset:0;display:none;place-items:center;background:oklch(10% .02 70 / .72);color:var(--fg);font-size:1.3rem;text-align:center;cursor:pointer;flex-direction:column;gap:18px}
+  #msg.show{display:flex}
+  #msg button{padding:12px 30px;border:0;border-radius:10px;background:var(--ac);color:oklch(15% .05 70);font-weight:700;cursor:pointer;font-size:1rem}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← Marvis Arcade</a>
+<h1>Rhythm · 节奏打击</h1>
+<div id="hud"><span>得分 <b id="score">0</b></span><span>连击 <b id="combo">0</b></span><span>生命 <b id="lives">5</b></span><span>最高 <b id="best">0</b></span></div>
+<div id="stage">
+  <div class="lane"></div><div class="lane"></div><div class="lane"></div><div class="lane"></div>
+  <div id="hit"></div><div id="judge"></div><div id="fx">GOOD</div>
+</div>
+<div id="keys">
+  <button class="k" data-i="0">◀</button><button class="k" data-i="1">▼</button><button class="k" data-i="2">▲</button><button class="k" data-i="3">▶</button>
+</div>
+<div class="hint"><kbd>WASD</kbd>/<kbd>方向键</kbd> 或点按按钮 · 音符过线时按下对应键</div>
+<div id="msg">GAME OVER<div id="final"></div><button onclick="restart()">再来一局</button></div>
+<script>
+(function(){
+  var LANES=4, H=220, JUDGE_Y=214, SONG_MS=60000, RATE=900/220; // px per second? no: px/ms
+  var scoreEl=document.getElementById('score'),comboEl=document.getElementById('combo'),
+      livesEl=document.getElementById('lives'),bestEl=document.getElementById('best'),
+      fxEl=document.getElementById('fx'),hitEl=document.getElementById('hit'),
+      msgEl=document.getElementById('msg'),finalEl=document.getElementById('final');
+  var best=+localStorage.getItem('rhythm.best')||0;bestEl.textContent=best;
+  var notes=[],score=0,combo=0,lives=5,t0=0,raf=null,playing=false,audioCtx=null;
+
+  // build note chart: 96 notes over 60s, random lanes, beat-spaced
+  function buildChart(){
+    var arr=[],t=0,i=0;
+    while(t<SONG_MS){ t+= (Math.random()<.25?340:460); if(t<SONG_MS) arr.push({lane:(Math.random()*4)|0,time:t,hit:false,missed:false}); }
+    return arr;
+  }
+  function beep(freq,dur,type){
+    if(!audioCtx)return;
+    var o=audioCtx.createOscillator(),g=audioCtx.createGain();
+    o.type=type||'square';o.frequency.value=freq;
+    g.gain.setValueAtTime(.12,audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001,audioCtx.currentTime+dur);
+    o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+dur);
+  }
+  function hitNote(i,when){
+    var now=performance.now()-t0;
+    // find nearest unhit note in lane
+    var bestN=null,bb=1e9;
+    for(var k=0;k<notes.length;k++){var n=notes[k];if(n.lane===i&&!n.hit){var d=Math.abs(n.time-now);if(d<bb){bb=d;bestN=n;}}}
+    if(!bestN)return;
+    var ok=bb<=70,warn=bb<=150;
+    if(!ok&&!warn){return;} // too early/low
+    bestN.hit=true;
+    var reward;
+    if(bb<=70){reward=100+combo*10;fx('PERFECT','perfect');beep(880,.09);}
+    else{reward=50+combo*10;fx('GOOD','good');beep(660,.08);}
+    combo++;score+=reward;scoreEl.textContent=score;
+    comboEl.textContent=combo;
+  }
+  function miss(n){
+    n.missed=true;combo=0;comboEl.textContent=0;
+    fx('MISS','miss');beep(160,.2,'sawtooth');
+    if(--lives<=0)end();livesEl.textContent=Math.max(0,lives);
+  }
+  function fx(txt,cls){fxEl.textContent=txt;fxEl.className='show '+cls;clearTimeout(fx._t);fxEl._t=setTimeout(function(){fxEl.className='';},220);}
+  function tick(){
+    if(!playing)return;
+    var now=performance.now()-t0;
+    // render notes
+    hitEl.innerHTML='';
+    for(var i=0;i<notes.length;i++){
+      var n=notes[i];
+      if(n.hit||n.missed)continue;
+      var dt=n.time-now;
+      if(dt<-220 && !n.missed){ miss(n); continue; }
+      if(dt<-160)continue; // beyond judge hidden
+      var y=JUDGE_Y - dt*RATE*.001;
+      if(y<-14||y>H)continue;
+      var d=document.createElement('div');
+      d.className='note';d.style.left=(n.lane*25)+'%';d.style.top=y+'px';
+      d.style.background=dt<0?'oklch(70% .16 30)':'oklch(78% .16 150)';
+      hitEl.appendChild(d);
+    }
+    if(now>=SONG_MS)end();
+    raf=requestAnimationFrame(tick);
+  }
+  function end(){
+    if(!playing)return;playing=false;cancelAnimationFrame(raf);
+    if(score>best){best=score;localStorage.setItem('rhythm.best',best);}
+    finalEl.textContent='得分 '+score+' · 最高 '+best;
+    msgEl.classList.add('show');
+  }
+  function restart(){
+    notes=buildChart();score=0;combo=0;lives=5;scoreEl.textContent=0;comboEl.textContent=0;livesEl.textContent=5;
+    msgEl.classList.remove('show');
+    if(!audioCtx){try{audioCtx=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+    playing=true;t0=performance.now();cancelAnimationFrame(raf);raf=requestAnimationFrame(tick);
+  }
+  function press(i){
+    if(!playing)return;
+    if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume();
+    hitNote(i);
+  }
+  addEventListener('keydown',function(e){
+    var m={ArrowLeft:0,ArrowDown:1,ArrowUp:2,ArrowRight:3,a:0,s:1,w:2,d:3};
+    var k=e.key.length>1?e.key:e.key.toLowerCase();
+    if(k in m){e.preventDefault();press(m[k]);}
+    if((k===' '||k==='r')&&!playing){restart();}
+  });
+  document.querySelectorAll('.k').forEach(function(b){b.addEventListener('pointerdown',function(){press(+b.dataset.i);});});
+  restart();
+})();
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"VideoGame","name":"Rhythm 节奏打击","description":"四键音符下落节奏打击游戏","genre":"Rhythm","playMode":"SinglePlayer","url":"https://marvis-arcade.pages.dev/rhythm.html","offers":{"@type":"Offer","price":"0","priceCurrency":"CNY"}}
+</script>
+</body>
+</html>
