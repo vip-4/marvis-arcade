@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mini Bowling · Blender 3D 迷你保龄球 - Marvis Arcade</title>
+<meta name="description" content="Blender 渲染的 3D 迷你保龄球：瞄准线 + 蓄力投掷，标准 10 帧计分（Strike / Spare / 全倒判定），单文件 HTML5 轻量游戏，键盘与触屏双适配，最高分本地存档。">
+<meta name="keywords" content="迷你保龄球, Mini Bowling, Blender 3D, 保龄球小游戏, 网页保龄, HTML5 游戏, 单机小游戏, 无需下载, browser bowling, html5 game">
+<link rel="canonical" href="https://marvis-arcade.pages.dev/bowling.html">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="theme-color" content="#101a2b">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Marvis Arcade">
+<meta property="og:title" content="Mini Bowling · Blender 3D 迷你保龄球 - Marvis Arcade">
+<meta property="og:description" content="Blender 渲染 3D 球瓶与保龄球，标准 10 帧计分，蓄力瞄准直接开打，纯单文件零依赖。">
+<meta property="og:url" content="https://marvis-arcade.pages.dev/bowling.html">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://marvis-arcade.pages.dev/bowling-og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Mini Bowling 迷你保龄球 Blender 封面">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Mini Bowling · Blender 3D 迷你保龄球">
+<meta name="twitter:description" content="Blender 渲染 3D 球瓶保龄球，标准 10 帧计分，浏览器直接玩。">
+<meta name="twitter:image" content="https://marvis-arcade.pages.dev/bowling-og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "VideoGame",
+      "name": "迷你保龄球 Mini Bowling",
+      "url": "https://marvis-arcade.pages.dev/bowling.html",
+      "description": "Blender 渲染 3D 球瓶与保龄球的休闲保龄球游戏：瞄准线加蓄力投掷，标准 10 帧计分规则，Strike 全倒与 Spare 补中判定，纯单文件 HTML5 实现，零后端零依赖，本地最高分存档。",
+      "inLanguage": ["zh-CN", "en"],
+      "genre": ["Sports", "Arcade", "Simulation"],
+      "playMode": "SinglePlayer",
+      "applicationCategory": "Game",
+      "operatingSystem": "Any",
+      "browserRequirements": "Requires JavaScript",
+      "gamePlatform": "Web Browser",
+      "aggregateRating": null,
+      "offers": {"@type": "Offer", "price": "0", "priceCurrency": "CNY", "availability": "https://schema.org/InStock"},
+      "featureList": "Blender 渲染 3D 素材 · 瞄准线 + 蓄力投掷 · 标准 10 帧计分（Strike/Spare）· 键盘与触屏双适配 · localStorage 最高分存档 · 单文件零依赖",
+      "image": "https://marvis-arcade.pages.dev/bowling-og.png",
+      "datePublished": "2026-09-12",
+      "author": {"@type": "Person", "name": "Marvis"},
+      "isPartOf": {"@type": "WebSite", "name": "Marvis Arcade", "url": "https://marvis-arcade.pages.dev/"}
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Marvis Arcade", "item": "https://marvis-arcade.pages.dev/"},
+        {"@type": "ListItem", "position": 2, "name": "Mini Bowling", "item": "https://marvis-arcade.pages.dev/bowling.html"}
+      ]
+    }
+  ]
+}
+</script>
+<style>
+  :root{--bg:#0d1526;--panel:#151f36;--line:#263552;--gold:#f5c356;--goldd:#a88635;--silver:#cdd6e8;--dim:#7d8aa8;--wood1:#a8763f;--wood2:#7c4f26}
+  *{box-sizing:border-box;margin:0;padding:0;user-select:none;-webkit-user-select:none}
+  body{background:radial-gradient(1100px 640px at 50% -10%,#1c2c4d,#0d1526 72%);color:var(--silver);font-family:"Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:18px}
+  a.back{position:fixed;top:14px;left:16px;font-size:.78rem;color:var(--dim);text-decoration:none;letter-spacing:.06em}
+  a.back:hover{color:var(--gold)}
+  h1{font-size:1.05rem;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);text-shadow:0 0 18px #f5c35644;text-align:center}
+  h1 small{letter-spacing:.14em;color:var(--dim);font-size:.62rem;display:block;text-align:center;margin-top:4px}
+  .stage{background:linear-gradient(180deg,#182442,#111a2e);border:1px solid var(--line);border-radius:20px;padding:14px;box-shadow:0 30px 70px -30px #000c,inset 0 1px 0 #ffffff14;max-width:min(94vw,760px);width:100%}
+  canvas{display:block;width:100%;height:auto;border-radius:12px;background:#0b1220;border:1px solid var(--line)}
+  .hud{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin:12px 0 10px}
+  .m{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center}
+  .m b{display:block;font-size:.56rem;letter-spacing:.12em;color:var(--dim);margin-bottom:3px}
+  .m em{font-style:normal;font-size:1.1rem;font-weight:800;font-variant-numeric:tabular-nums}
+  .m em.hot{color:var(--gold);text-shadow:0 0 12px #f5c35666}
+  .frames{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin-bottom:10px}
+  .fr{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:4px 2px;text-align:center;min-height:38px}
+  .fr b{display:block;font-size:.52rem;color:var(--dim);letter-spacing:.04em;margin-bottom:2px}
+  .fr .rolls{font-size:.6rem;color:var(--dim);min-height:12px}
+  .fr .tot{font-size:.82rem;font-weight:800;color:var(--silver)}
+  .fr.cur{border-color:var(--goldd)}
+  .fr.cur .tot{color:var(--gold)}
+  .bar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .btn{border:0;border-radius:12px;padding:13px 0;font-size:.95rem;font-weight:800;letter-spacing:.14em;cursor:pointer;transition:filter .15s,transform .05s;color:#1a1305}
+  .btn:active{transform:translateY(1px)}
+  .btn.play{background:linear-gradient(180deg,#ffd86e,#e8a92c);box-shadow:0 6px 18px #e8a92c44,inset 0 1px 0 #fff6}
+  .btn.snd{background:linear-gradient(180deg,#4a5a80,#2e3a5c);color:var(--silver);border:1px solid var(--line)}
+  .msg{min-height:20px;text-align:center;font-size:.82rem;color:var(--dim);letter-spacing:.08em;margin-top:10px}
+  .msg.hot{color:var(--gold);font-weight:700}
+  .hint{color:var(--dim);font-size:.72rem;line-height:1.8;text-align:center}
+  kbd{background:#1b2740;border:1px solid var(--line);padding:2px 7px;border-radius:5px;font-size:.68rem;color:var(--silver)}
+</style>
+</head>
+<body>
+<a class="back" href="index.html">← Marvis Arcade</a>
+<h1>Mini Bowling<small>BLENDER-CRAFTED 10-FRAME BOWLING</small></h1>
+<div class="stage">
+  <canvas id="c" width="920" height="640"></canvas>
+  <div class="hud">
+    <div class="m"><b>FRAME</b><em id="hudFr">1 / 10</em></div>
+    <div class="m"><b>SCORE</b><em id="hudSc">0</em></div>
+    <div class="m"><b>PINS</b><em id="hudPin">10</em></div>
+    <div class="m"><b>BEST</b><em id="hudBest">0</em></div>
+  </div>
+  <div class="frames" id="frames"></div>
+  <div class="bar">
+    <button class="btn play" id="btnNew" onclick="G.restart()">RESTART</button>
+    <button class="btn snd" id="btnSnd" onclick="G.toggleMute()">SOUND ON</button>
+  </div>
+  <div class="msg" id="msg">点击并按住蓄力，瞄准后松开投球</div>
+</div>
+<div class="hint"><kbd>鼠标移动</kbd> 瞄准 · <kbd>按住</kbd> 蓄力 · <kbd>松开</kbd> 投球 · <kbd>←→</kbd> 微调 · <kbd>空格</kbd> 蓄力/投 · <kbd>R</kbd> 重开</div>
+<script id="gamedata" type="text/plain" data-pin="data:image/png;base64,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" data-ball="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAYAAABV7bNHAAACQUlEQVR42u2cwU4DMQxEBxOB+HDufA+fwgcAt7YqbcJuCVxIZbLOdkEFiXgsobYKHHiaGduB9uL+9u4dRsWXHQDgZb0BAKxWKwDAPiUM44hditjs98fvf3h+RI8lc3CsGsYRnkp+8kO7FAkIAIb0CgBIKcFrfUtBewVK548rQDp/hk8gMUaX+TOroGKvJfkTh1cfgKzutSR/Dm/Zo4LS4vx52qy6BRQs5Wh7ec4fABDLVkU9tb285c9RQVo52lpFPS179Q4HAELZteoqu1exV2t67jmgJwoqtirKAYD1dtsM597hAEDQSqmrwJnLnp47mKkgfaWh4dTZc3jL3cMBgKAt1OpYFhwvFeauLurM0XA8qAcAwtKt3CMcAAjbGBEuBTdX100wpWN5AnME5PGX/vUrVwJiERABERAB/Vkdcp48li8CAhBEzEcqqFKQfh1EEER8AypggsgEUjkX79bSkCx4QvVI026uLabB1FAY0jOwdEi7ySArgOtzaxZyo6BaIZZa6vbuPoNakGrFEdBMYHPVqOBYVgycpNs7GSdpBaS1bnCSNixW2r77SVrPPy2ItJgxHNJilcWsizL3gOa2eAJauKO5n4PqDLLOuGoYdtMdjoBO7GPMIGD2ZlE4RbdV5NZip1r8l9nIs3Ksv4tNzrx3q1NtX3jdOlWOthi7WOO5++uO1qJadzIOij0vq6cuvM6xtP7rLlY+dGTM53nvyJgzLnoBdMj5V6GzzYP/xElABERA5wtTAqKCCIiACMhhfQAe1tCgnGgfYAAAAABJRU5ErkJggg=="></script>
+<script>
+(function(){
+"use strict";
+var cv=document.getElementById('c'),ctx=cv.getContext('2d');
+var elFr=document.getElementById('hudFr'),elSc=document.getElementById('hudSc'),
+    elPin=document.getElementById('hudPin'),elBest=document.getElementById('hudBest'),
+    framesEl=document.getElementById('frames'),msgEl=document.getElementById('msg');
+var gd=document.getElementById('gamedata');
+var PIN=gd.getAttribute('data-pin'),BALL=gd.getAttribute('data-ball');
+function img(src){var i=new Image();i.src=src;return i;}
+var pinImg=img(PIN),ballImg=img(BALL);
+var PIN_BYTE=gd.getAttribute('data-pin').length>20?60:0;
+
+/* ---- geometry ---- */
+var CX=460;
+function pinPos(i){
+  var rows=[[0],[1,2],[3,4,5],[6,7,8,9]];
+  var SP=62, ZR=64;
+  for(var r=0;r<rows.length;r++){
+    var idx=rows[r].indexOf(i);
+    if(idx>=0){
+      var n=rows[r].length;
+      var x=CX+(idx-(n-1)/2)*SP;
+      var y=196+(rows.length-1-r)*ZR; /* nearest row first */
+      return {x:x,y:y};
+    }
+  }
+  return {x:CX,y:196};
+}
+/* ball rest / launch */
+var BOTTOM=596;
+
+/* ---- state ---- */
+var G={
+  frames:[],frame:0,roll:0,pins:[],done:false,
+  aimX:CX,charging:false,power:0,
+  ball:{x:CX,y:BOTTOM,vx:0,vy:0,spinning:0,rolling:false,arrived:false},
+  hitInFrame:[],settleT:0,
+  best:+localStorage.getItem('bowling.hi')||0,
+  muted:false,
+  restart:function(){
+    this.frames=[];this.frame=0;this.roll=0;this.done=false;
+    this.newPins();this.resetBall();this.settleT=0;
+    this.renderHud();this.renderFrames();setMsg('第 1 帧 · 第一球');
+  },
+  newPins:function(){this.pins=[];for(var i=0;i<10;i++)this.pins.push(true);this.hitInFrame=[];},
+  resetBall:function(){this.ball={x:CX,y:BOTTOM,vx:0,vy:0,spinning:0,rolling:false,arrived:false};},
+  toggleMute:function(){
+    this.muted=!this.muted;
+    document.getElementById('btnSnd').textContent=this.muted?'SOUND OFF':'SOUND ON';
+  },
+  throwBall:function(){
+    if(this.done||this.ball.rolling)return;
+    var p=this.power/100;
+    if(p<0.08){setMsg('力度太轻，再试一次');return;}
+    var dx=this.aimX-CX, dy=196-BOTTOM;
+    var len=Math.sqrt(dx*dx+dy*dy)||1;
+    var spd=7+11*p;
+    this.ball.vx=dx/len*spd;this.ball.vy=dy/len*spd;
+    this.ball.rolling=true;this.ball.spinning=0;
+    this.charging=false;
+    this.power=0;
+    sfx('throw');
+  },
+  /* score: standard 10-frame */
+  total:function(){
+    var score=0,f=this.frames;
+    for(var i=0;i<10;i++){
+      var fr=f[i];if(!fr)break;
+      var r=fr.rolls;
+      if(r[0]===10){score+=10+(f[i+1]?ack(f[i+1],2):0);}
+      else if(r[0]+r[1]===10){score+=10+(f[i+1]?ack(f[i+1],1):0);}
+      else score+=(r[0]||0)+(r[1]||0);
+    }
+    return score;
+  },
+  renderHud:function(){
+    elFr.textContent=(this.done?10:this.frame+1)+' / 10';
+    elSc.textContent=this.total();
+    var n=0;for(var i=0;i<10;i++)if(this.pins[i])n++;
+    elPin.textContent=this.done?'-':n+(this.roll===0?'':'');
+    elBest.textContent=this.best;
+  },
+  renderFrames:function(){
+    framesEl.innerHTML='';
+    for(var i=0;i<10;i++){
+      var d=document.createElement('div');d.className='fr'+(i===this.frame&&!this.done?' cur':'');
+      var rolls=this.frames[i]?this.frames[i].rolls:[];
+      var lb='<b>第'+(i+1)+'帧</b><span class="rolls">'+fmtRolls(rolls)+'</span><span class="tot">'+prefixScore(i)+'</span>';
+      d.innerHTML=lb;framesEl.appendChild(d);
+    }
+  }
+};
+function fmtRolls(r){
+  if(!r.length)return '&nbsp;';
+  var s='';
+  for(var i=0;i<r.length;i++){
+    if(i===0&&r[i]===10&&r.length===1)s+='X';
+    else if(i===1&&r[0]+r[1]===10)s+='/';
+    else if(r[i]===10)s+='X';
+    else if(r[i]===0)s+='-';
+    else s+=r[i];
+  }
+  return s;
+}
+function prefixScore(i){
+  var fs=G.frames;if(!fs.length)return '';
+  /* compute running score up to and including frame i (only when completable) */
+  var score=0;
+  for(var k=0;k<=Math.min(i,fs.length-1);k++){
+    var fr=fs[k];if(!fr)break;
+    var r=fr.rolls;
+    if(r[0]===10){score+=10+(fs[k+1]?ack(fs[k+1],2):0);}
+    else if(r[0]+r[1]===10){score+=10+(fs[k+1]?ack(fs[k+1],1):0);}
+    else score+=(r[0]||0)+(r[1]||0);
+  }
+  return score||'';
+}
+function ack(fr,n){
+  var s=0,r=fr.rolls;
+  for(var i=0;i<n;i++)s+=r[i]||0;
+  return s;
+}
+function setMsg(t){msgEl.textContent=t;msgEl.className='msg'+(t.indexOf('分')>=0?' hot':'');}
+
+/* ---- audio ---- */
+var AC=window.AudioContext||window.webkitAudioContext;
+var AUD=AC?new AC():null;
+function tone(f,d,when,type,vol){
+  if(!AUD||G.muted)return;
+  var t=AUD.currentTime+(when||0),o=AUD.createOscillator(),g=AUD.createGain();
+  o.type=type||'square';o.frequency.value=f;
+  g.gain.setValueAtTime(vol||.05,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(g);g.connect(AUD.destination);o.start(t);o.stop(t+d+.02);
+}
+function sfx(k){
+  if(!AUD||G.muted)return;
+  if(k==='throw'){tone(180,.14,0,'sawtooth',.04);tone(120,.16,.04,'sawtooth',.03);}
+  else if(k==='hit'){tone(300,.07,0,'square',.05);tone(220,.09,.03,'square',.05);}
+  else if(k==='strike'){[523,659,784,1046].forEach(function(f,i){tone(f,.18,i*.1,'triangle',.06);});}
+  else if(k==='spare'){[523,659,784].forEach(function(f,i){tone(f,.15,i*.09,'triangle',.06);});}
+  else if(k==='over'){[392,523,659,784,1046].forEach(function(f,i){tone(f,.2,i*.13,'triangle',.06);});}
+}
+/* ---- input ---- */
+function cvPos(e){
+  var r=cv.getBoundingClientRect();
+  var x=(e.clientX-r.left)*(cv.width/r.width);
+  return x;
+}
+cv.addEventListener('mousemove',function(e){if(!G.ball.rolling&&!G.charging)G.aimX=clamp(cvPos(e),300,620);});
+cv.addEventListener('mousedown',function(e){
+  if(G.done||G.ball.rolling)return;
+  if(!AUD&&AC){AUD=new AC();}
+  G.charging=true;G.power=0;G.aimX=clamp(cvPos(e),300,620);
+});
+window.addEventListener('mouseup',function(){if(G.charging){G.charging=false;G.throwBall();}});
+cv.addEventListener('touchstart',function(e){
+  e.preventDefault();
+  var t=e.touches[0];var r=cv.getBoundingClientRect();
+  G.aimX=clamp((t.clientX-r.left)*(cv.width/r.width),300,620);
+  if(!G.done&&!G.ball.rolling){if(!AUD&&AC)AUD=new AC();G.charging=true;G.power=0;}
+},{passive:false});
+cv.addEventListener('touchmove',function(e){
+  e.preventDefault();var t=e.touches[0];var r=cv.getBoundingClientRect();
+  G.aimX=clamp((t.clientX-r.left)*(cv.width/r.width),300,620);
+},{passive:false});
+cv.addEventListener('touchend',function(e){e.preventDefault();if(G.charging){G.charging=false;G.throwBall();}},{passive:false});
+var keys={};
+window.addEventListener('keydown',function(e){
+  keys[e.code]=true;
+  if(e.code==='ArrowLeft')G.aimX=clamp(G.aimX-16,300,620);
+  else if(e.code==='ArrowRight')G.aimX=clamp(G.aimX+16,300,620);
+  else if(e.code==='Space'){e.preventDefault();if(!G.done&&!G.ball.rolling){if(!AUD&&AC)AUD=new AC();G.charging=true;}}
+  else if(e.code==='KeyR')G.restart();
+});
+window.addEventListener('keyup',function(e){
+  keys[e.code]=false;
+  if(e.code==='Space'&&G.charging){G.charging=false;G.throwBall();}
+});
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+
+/* ---- draw ---- */
+function drawLane(){
+  ctx.save();
+  /* lane trapezoid for a bit of perspective */
+  ctx.beginPath();
+  ctx.moveTo(150,640);ctx.lineTo(770,640);
+  ctx.lineTo(700,150);ctx.lineTo(220,150);
+  ctx.closePath();
+  var lg=ctx.createLinearGradient(0,150,0,640);
+  lg.addColorStop(0,'#b98a55');lg.addColorStop(1,'#8f6232');
+  ctx.fillStyle=lg;ctx.fill();
+  ctx.strokeStyle='#5d3a18';ctx.lineWidth=3;ctx.stroke();
+  /* boards */
+  ctx.strokeStyle='rgba(80,48,18,.35)';ctx.lineWidth=1;
+  for(var y=150;y<640;y+=26){
+    ctx.beginPath();
+    var r=(y-150)/490, wl=220+(700-220)*r;
+    ctx.moveTo(CX-wl/2,y);ctx.lineTo(CX+wl/2,y);
+    ctx.stroke();
+  }
+  /* gutters */
+  ctx.fillStyle='#0a0f1c';
+  ctx.beginPath();ctx.moveTo(120,640);ctx.lineTo(150,640);ctx.lineTo(220,150);ctx.lineTo(200,150);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(800,640);ctx.lineTo(770,640);ctx.lineTo(700,150);ctx.lineTo(720,150);ctx.closePath();ctx.fill();
+  /* foul line */
+  ctx.strokeStyle='#ffd86e';ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(160,570);ctx.lineTo(760,570);ctx.stroke();
+  ctx.restore();
+}
+function drawPins(){
+  for(var i=0;i<10;i++){
+    var p=pinPos(i);
+    if(!G.pins[i]){
+      /* fallen: lying flat, faded */
+      drawPin(p.x,p.y,true);
+    }else{
+      drawPin(p.x,p.y,false);
+    }
+  }
+}
+var fallenAnim={};
+function drawPin(x,y,fallen){
+  var w=46,h=64;
+  if(!fallen){
+    ctx.drawImage(pinImg,x-w/2,y-h,w,h);
+  }else{
+    ctx.save();
+    ctx.globalAlpha=.45;
+    ctx.translate(x,y);
+    ctx.rotate(Math.PI/2);
+    ctx.drawImage(pinImg,-w/2,-h/2,w,h);
+    ctx.restore();
+  }
+}
+function drawAim(){
+  if(G.done||G.ball.rolling)return;
+  /* aim line from ball to target */
+  ctx.save();
+  ctx.strokeStyle='rgba(255,216,110,.9)';ctx.lineWidth=2;ctx.setLineDash([8,8]);
+  ctx.beginPath();
+  var y0=BOTTOM-8,y1=230;
+  var x1=CX+(G.aimX-CX)*(1-(BOTTOM-y1)/(BOTTOM-196));
+  ctx.moveTo(CX,y0);ctx.lineTo(x1,y1);ctx.stroke();
+  ctx.setLineDash([]);
+  /* power gauge */
+  var pw=G.charging?(0.25+0.75*G.power/100):G.power/100;
+  ctx.fillStyle='rgba(20,28,50,.75)';
+  ctx.fillRect(56,120,26,360);
+  var gh=360*pw;
+  var grad=ctx.createLinearGradient(0,120,0,480);
+  grad.addColorStop(0,'#ffd86e');grad.addColorStop(1,'#e84a2a');
+  ctx.fillStyle=grad;
+  ctx.fillRect(56,120+360-gh,26,gh);
+  ctx.strokeStyle='#3a4a72';ctx.strokeRect(56,120,26,360);
+  ctx.restore();
+}
+function drawBall(){
+  var b=G.ball;
+  if(!b.rolling&&!G.charging)return;
+  var r=30;
+  ctx.save();
+  ctx.translate(b.x,b.y);
+  ctx.rotate(b.spinning);
+  ctx.drawImage(ballImg,-r,-r,r*2,r*2);
+  ctx.restore();
+}
+function update(dt){
+  var b=G.ball;
+  if(b.rolling){
+    b.x+=b.vx*dt*60;b.y+=b.vy*dt*60;b.spinning+=0.08+b.vx*0.02;
+    if(b.x<236||b.x>684){b.vx*=-0.82;if(b.x<236)b.x=238;else b.x=682;}
+    /* collide with pins when near */
+    if(b.y>150&&b.y<360){
+      for(var i=0;i<10;i++){
+        if(!G.pins[i])continue;
+        var p=pinPos(i);
+        var dx=b.x-p.x,dy=b.y-p.y;
+        if(Math.sqrt(dx*dx+dy*dy)<34){
+          G.pins[i]=false;
+          if(G.hitInFrame.indexOf(i)<0)G.hitInFrame.push(i);
+          sfx('hit');
+          /* chain effect */
+          cascade(i);
+        }
+      }
+    }
+    if(b.y<128){
+      b.vy=0;b.vx=0;b.rolling=false;b.arrived=true;
+      G.settleT=1;
+      onSettle();
+    }
+    if(b.y>650){b.rolling=false;b.arrived=true;G.settleT=1;onSettle();}
+  }
+  if(G.charging){
+    G.power=Math.min(100,G.power+46*dt);
+  }
+  if(G.settleT>0){
+    G.settleT-=dt;
+    if(G.settleT<=0){
+      G.settleT=0;
+      resolveSettle();
+    }
+  }
+}
+function cascade(i0){
+  /* occasionally topple neighbors */
+  var near=neighborsOf(i0);
+  for(var k=0;k<near.length;k++){
+    if(G.pins[near[k]]&&Math.random()<0.5){
+      G.pins[near[k]]=false;
+      G.hitInFrame.push(near[k]);
+      sfx('hit');
+    }
+  }
+}
+function neighborsOf(i0){
+  var map=[
+    [1,2],[0,2,3],[0,1,3,4],[1,2,4,5],[2,3,5,6],[3,4,6,7,8],[4,5,7,8],[5,6,8,9],[5,6,7,9],[7,8]
+  ];
+  return map[i0]||[];
+}
+function resolveSettle(){
+  var down=G.hitInFrame.filter(function(i){return !G.pins[i];}).length;
+  var totalDown=down;
+  /* count all fallen */
+  var fallen=0;for(var i=0;i<10;i++)if(!G.pins[i])fallen++;
+  if(fallen===10&&G.hitInFrame.length>0&&G.roll===0){
+    sfx('strike');setMsg('STRIKE 全倒！');G.frames[G.frame]={rolls:[10]};G.roll++;
+    G.frame++;G.roll=0;
+    if(G.frame>=10){G.done=true;finish();}
+    else{setMsg('第 '+(G.frame+1)+' 帧 · 第一球');G.newPins();}
+    G.resetBall();G.renderHud();G.renderFrames();return;
+  }
+  /* normal resolution */
+  var f=G.frames[G.frame]=G.frames[G.frame]||{rolls:[]};
+  f.rolls.push(totalDown);
+  G.roll++;
+  if(G.roll>=2){
+    var sum=f.rolls[0]+f.rolls[1];
+    if(sum===10){sfx('spare');setMsg('SPARE 补中！');}
+    G.frame++;G.roll=0;
+    if(G.frame>=10){G.done=true;finish();}
+    else{setMsg('第 '+(G.frame+1)+' 帧 · 第一球');G.newPins();}
+  }else{
+    var left=G.pins.filter(function(b){return b;}).length;
+    setMsg('第二球 · 剩余 '+left+' 瓶');
+  }
+  G.resetBall();G.renderHud();G.renderFrames();
+}
+function onSettle(){
+  /* called when ball arrives */
+}
+function finish(){
+  var t=G.total();
+  if(t>G.best){G.best=t;localStorage.setItem('bowling.hi',t);}
+  setMsg('游戏结束 · 总分 '+t+' 分 · '+(t>=250?'完美发挥！':(t>=180?'表现不错！':'再挑战一局！')));
+  sfx('over');G.renderHud();
+}
+function frameLoop(ts){
+  var dt=Math.min(0.05,(ts-(last||ts))/1000||0.016);last=ts;
+  update(dt);
+  ctx.clearRect(0,0,cv.width,cv.height);
+  drawLane();
+  drawPins();
+  drawAim();
+  drawBall();
+  requestAnimationFrame(frameLoop);
+}
+var last=0;
+G.restart();
+requestAnimationFrame(frameLoop);
+window.G=G;
+})();
+</script>
+</body>
+</html>
