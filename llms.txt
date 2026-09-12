@@ -29,3 +29,4 @@ Marvis Arcade 是一个纯静态托管的小游戏合集站点，部署于 Cloud
 ## 部署平台
 - Cloudflare Pages：https://marvis-arcade.pages.dev/
 - GitHub Pages：https://vip-4.github.io/marvis-arcade/
+（内容由AI生成，仅供参考）
